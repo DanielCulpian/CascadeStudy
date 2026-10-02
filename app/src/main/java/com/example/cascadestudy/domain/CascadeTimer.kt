@@ -2,7 +2,8 @@ package com.example.cascadestudy.domain
 
 class CascadeTimer(
     private val session: StudySession,
-    private val stateMachine: TimerStateMachine
+    private val stateMachine: TimerStateMachine,
+    private val clock: TimerClock
 ){
 
     var endTimeMillis: Long? = null
@@ -24,7 +25,7 @@ class CascadeTimer(
         val durationMillis = durationMinutes * 60_000L
 
         remainingSeconds = durationMinutes * 60L
-        endTimeMillis = System.currentTimeMillis() + durationMillis // System.currentTimeMillis() is provisional
+        endTimeMillis = clock.nowMillis() + durationMillis
 
     }
 
@@ -33,7 +34,7 @@ class CascadeTimer(
             return
 
         val endTime = endTimeMillis ?: return
-        val remainingMillis = endTime - System.currentTimeMillis()
+        val remainingMillis = endTime - clock.nowMillis()
 
         remainingSeconds = maxOf(0, remainingMillis/1000)
 
@@ -47,7 +48,7 @@ class CascadeTimer(
 
         val durationMillis = remainingSeconds * 1000L
 
-        endTimeMillis = System.currentTimeMillis() + durationMillis
+        endTimeMillis = clock.nowMillis() + durationMillis
     }
 
     fun reset(){
@@ -64,10 +65,20 @@ class CascadeTimer(
     fun intervalFinished(){
         val isLastInterval = currentIntervalIndex == session.intervals.lastIndex
 
-        if (!stateMachine.onEvent(
-                TimerEvent.IntervalFinished(isLastInterval)
-        ))
+        if (!stateMachine.onEvent(TimerEvent.IntervalFinished(isLastInterval)))
             return
+
+        if(isLastInterval){
+            endTimeMillis = null
+            remainingSeconds = 0
+            return
+        }
+
+        val restDurationMinutes = session.restDurationMinutes
+        val restDurationMillis = restDurationMinutes * 60_000L
+
+        remainingSeconds = restDurationMinutes * 60L
+        endTimeMillis = clock.nowMillis() + restDurationMillis
     }
 
     fun restFinished(){
@@ -80,14 +91,25 @@ class CascadeTimer(
         val durationMillis = durationMinutes * 60_000L
 
         remainingSeconds = durationMinutes * 60L
-        endTimeMillis = System.currentTimeMillis() + durationMillis
+        endTimeMillis = clock.nowMillis() + durationMillis
     }
 
     fun update(){
         val endTime = endTimeMillis ?: return
 
-        val remainingMillis = endTime - System.currentTimeMillis()
+        val remainingMillis = endTime - clock.nowMillis()
 
-        remainingSeconds = maxOf(0, remainingMillis/1000)
+        if(remainingMillis > 0){
+            remainingSeconds = remainingMillis/1000
+            return
+        }
+
+        remainingSeconds = 0
+
+        when(stateMachine.state){
+            TimerState.STUDYING -> intervalFinished()
+            TimerState.RESTING -> restFinished()
+            else -> {}
+        }
     }
 }
