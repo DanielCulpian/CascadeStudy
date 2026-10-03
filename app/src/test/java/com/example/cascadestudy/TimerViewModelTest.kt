@@ -248,6 +248,7 @@ class TimerViewModelTest{
         assertEquals(0, viewModel.uiState.value.remainingSeconds)
     }
 
+    // Verifies UI state changes to FINISHED when the session finishes
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     @Test
     fun sessionFinishes_stopAutomaticUpdates(){
@@ -281,6 +282,7 @@ class TimerViewModelTest{
         assertEquals(TimerState.FINISHED, viewModel.uiState.value.state)
     }
 
+    // Verifies resetting stops automatic updates
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     @Test
     fun reset_stopAutomaticUpdates(){
