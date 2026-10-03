@@ -36,10 +36,11 @@ class CascadeTimer(
 
     // Pauses the running timer and saves the remaining seconds
     fun pause(){
+        val endTime = endTimeMillis ?: return
+
         if (!stateMachine.onEvent(TimerEvent.Pause))
             return
 
-        val endTime = endTimeMillis ?: return
         val remainingMillis = endTime - clock.nowMillis()
 
         remainingSeconds = maxOf(0, remainingMillis/1000)
