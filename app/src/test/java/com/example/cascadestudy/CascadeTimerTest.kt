@@ -17,7 +17,6 @@ class CascadeTimerTest {
         restDurationMinutes = 1
     )
 
-
     // Verifies that starting a session transitions state to STUDYING and sets initial time
     @Test
     fun start_startsStudying(){
@@ -235,5 +234,73 @@ class CascadeTimerTest {
         assertEquals(29_877L, timer.remainingMillis)
     }
 
+    // Verifies that calling resume with no time remaining is ignored
+    @Test
+    fun resume_whenNoTimeRemains_doesNothing(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val timer = CascadeTimer(
+            session = testSession,
+            stateMachine = TimerStateMachine(),
+            clock = fakeClock
+        )
+
+        // Act
+        timer.start()
+        fakeClock.advanceMillis(60_000L)
+        timer.pause()
+        val resumed = timer.resume()
+
+        // Assert
+        assertEquals(false, resumed)
+        assertEquals(TimerState.PAUSED, timer.state)
+        assertEquals(0L, timer.remainingMillis)
+    }
+
+    // Verifies that a session with only one interval finishes immediately
+    @Test
+    fun update_whenSessionHasOneInterval_finishesSession(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val session = StudySession(
+            intervals = listOf(1),
+            restDurationMinutes = 1
+        )
+        val timer = CascadeTimer(
+            session = session,
+            stateMachine = TimerStateMachine(),
+            clock = fakeClock
+        )
+
+        // Act
+        timer.start()
+        fakeClock.advanceMillis(60_000L)
+        timer.update()
+
+        // Assert
+        assertEquals(TimerState.FINISHED, timer.state)
+        assertEquals(0, timer.currentIntervalIndex)
+        assertEquals(0L, timer.remainingMillis)
+    }
+
+    // Verifies that remaining seconds are calculated correctly
+    @Test
+    fun remainingSeconds_roundsUpRemainingMilliseconds(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val timer = CascadeTimer(
+            session = testSession,
+            stateMachine = TimerStateMachine(),
+            clock = fakeClock
+        )
+
+        // Act
+        timer.start()
+        fakeClock.advanceMillis(20_123L)
+        timer.update()
+
+        // Assert
+        assertEquals(40L, timer.remainingSeconds)
+    }
 }
 

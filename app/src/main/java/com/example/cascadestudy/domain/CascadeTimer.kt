@@ -20,7 +20,7 @@ class CascadeTimer(
 
     // Remaining seconds of the current interval or rest
     val remainingSeconds: Long
-        get() = remainingMillis/1000
+        get() = (remainingMillis + 999)/1000
 
     // Current state of the timer
     val state: TimerState
@@ -63,6 +63,9 @@ class CascadeTimer(
 
     // Resumes the timer from the paused state
     fun resume(): Boolean{
+        if(remainingMillis <= 0)
+            return false
+
         if (!stateMachine.onEvent(TimerEvent.Resume))
             return false
 
