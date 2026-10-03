@@ -247,4 +247,61 @@ class TimerViewModelTest{
         assertEquals(TimerState.FINISHED, viewModel.uiState.value.state)
         assertEquals(0, viewModel.uiState.value.remainingSeconds)
     }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun sessionFinishes_stopAutomaticUpdates(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = TimerViewModel(
+            session = testSession,
+            clock = fakeClock
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+
+        // Assert
+        assertEquals(TimerState.FINISHED, viewModel.uiState.value.state)
+
+        // Act
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        assertEquals(TimerState.FINISHED, viewModel.uiState.value.state)
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun reset_stopAutomaticUpdates(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = TimerViewModel(
+            session = testSession,
+            clock = fakeClock
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(20_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        viewModel.reset()
+        fakeClock.advanceMillis(10_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+
+        // Assert
+        assertEquals(TimerState.IDLE, viewModel.uiState.value.state)
+        assertEquals(0, viewModel.uiState.value.remainingSeconds)
+
+    }
 }
