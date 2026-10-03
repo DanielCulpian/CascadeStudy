@@ -8,8 +8,10 @@ import org.junit.Test
 
 import org.junit.Assert.*
 
+// Unit tests for CascadeTimer state transitions and time tracking
 class CascadeTimerTest {
 
+    // Verifies that starting a session transitions state to STUDYING and sets initial time
     @Test
     fun start_startsStudying(){
         // Set
@@ -32,6 +34,7 @@ class CascadeTimerTest {
         assertEquals(60L, timer.remainingSeconds)
     }
 
+    // Verifies that finishing a study interval transitions state to RESTING
     @Test
     fun update_whenStudyIntervalFinishes_startsResting(){
         // Set
@@ -56,6 +59,7 @@ class CascadeTimerTest {
         assertEquals(60L, timer.remainingSeconds)
     }
 
+    // Verifies that finishing a rest period advances to the next study interval
     @Test
     fun update_whenRestIntervalFinishes_startsNextInterval(){
         // Set
@@ -82,6 +86,7 @@ class CascadeTimerTest {
         assertEquals(60L, timer.remainingSeconds)
     }
 
+    // Verifies that finishing the final study interval transitions state to FINISHED
     @Test
     fun update_whenLastIntervalFinishes_finishesSession(){
         // Set
@@ -114,6 +119,7 @@ class CascadeTimerTest {
         assertEquals(0, timer.remainingSeconds)
     }
 
+    // Verifies that pausing while studying saves remaining time and sets state to PAUSED
     @Test
     fun pause_whenStudying_pausesTimer(){
         // Set
@@ -138,6 +144,7 @@ class CascadeTimerTest {
         assertEquals(40L, timer.remainingSeconds)
     }
 
+    // Verifies that resuming from PAUSED state continues studying with calculated end time
     @Test
     fun resume_whenPaused_resumesTimer(){
         // Set
@@ -165,6 +172,7 @@ class CascadeTimerTest {
         assertEquals(30L, timer.remainingSeconds)
     }
 
+    // Verifies that resetting returns the timer to IDLE state and clears all values
     @Test
     fun reset_whenStudying_resetsTimer(){
         // Set
@@ -190,6 +198,7 @@ class CascadeTimerTest {
         assertEquals(0L, timer.remainingSeconds)
     }
 
+    // Verifies that calling pause while IDLE is ignored and keeps the timer IDLE
     @Test
     fun pause_whenIdle_doesNothing(){
         // Set
