@@ -6,7 +6,6 @@ class CascadeTimer(
     private val stateMachine: TimerStateMachine,
     private val clock: TimerClock
 ){
-
     // Time in milliseconds when the current interval or rest will finish
     var endTimeMillis: Long? = null
         private set
@@ -19,10 +18,14 @@ class CascadeTimer(
     var remainingSeconds: Long = 0
         private set
 
+    // Current state of the timer
+    val state: TimerState
+        get() = stateMachine.state
+
     // Starts the study session from the first interval
-    fun start(){
+    fun start(): Boolean{
         if(!stateMachine.onEvent(TimerEvent.Start))
-            return
+            return false
 
         currentIntervalIndex = 0
 
@@ -32,6 +35,7 @@ class CascadeTimer(
         remainingSeconds = durationMinutes * 60L
         endTimeMillis = clock.nowMillis() + durationMillis
 
+        return true
     }
 
     // Pauses the running timer and saves the remaining seconds
