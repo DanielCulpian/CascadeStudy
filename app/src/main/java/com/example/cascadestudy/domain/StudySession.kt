@@ -5,4 +5,16 @@ data class StudySession(
     // TODO: Set new intervals. Doing that we will be able to manage shortest sessions like (30, 20, 10)
     val intervals: List<Int> = listOf(60, 50, 40, 30, 20, 10), // Main study intervals
     val restDurationMinutes: Int = 10 // Main rest time
-)
+){
+    init{
+        require(intervals.isNotEmpty()){
+            "Study session must have at least one interval."
+        }
+        require(intervals.all { it > 0 }){
+            "Study session intervals must be positive."
+        }
+        require(restDurationMinutes > 0){
+            "Rest duration must be greater than zero."
+        }
+    }
+}
