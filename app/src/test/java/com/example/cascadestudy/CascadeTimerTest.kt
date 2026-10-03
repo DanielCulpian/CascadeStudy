@@ -11,14 +11,18 @@ import org.junit.Assert.*
 // Unit tests for CascadeTimer state transitions and time tracking
 class CascadeTimerTest {
 
+    // Virtual session to use in tests
+    private val testSession = StudySession(
+        intervals = listOf(1, 1, 1),
+        restDurationMinutes = 1
+    )
+
+
     // Verifies that starting a session transitions state to STUDYING and sets initial time
     @Test
     fun start_startsStudying(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -38,10 +42,7 @@ class CascadeTimerTest {
     @Test
     fun update_whenStudyIntervalFinishes_startsResting(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -63,10 +64,7 @@ class CascadeTimerTest {
     @Test
     fun update_whenRestIntervalFinishes_startsNextInterval(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -90,10 +88,7 @@ class CascadeTimerTest {
     @Test
     fun update_whenLastIntervalFinishes_finishesSession(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -123,10 +118,7 @@ class CascadeTimerTest {
     @Test
     fun pause_whenStudying_pausesTimer(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -148,10 +140,7 @@ class CascadeTimerTest {
     @Test
     fun resume_whenPaused_resumesTimer(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -176,10 +165,7 @@ class CascadeTimerTest {
     @Test
     fun reset_whenStudying_resetsTimer(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -202,10 +188,7 @@ class CascadeTimerTest {
     @Test
     fun pause_whenIdle_doesNothing(){
         // Set
-        val session = StudySession(
-            intervals = listOf(1, 1, 1),
-            restDurationMinutes = 1
-        )
+        val session = testSession
 
         val stateMachine = TimerStateMachine()
         val fakeClock = FakeTimerClock()
@@ -219,6 +202,37 @@ class CascadeTimerTest {
         assertEquals(0, timer.currentIntervalIndex)
         assertEquals(null, timer.endTimeMillis)
         assertEquals(0L, timer.remainingSeconds)
+    }
+
+    // Verifies if whe can save milliseconds
+    @Test
+    fun pauseAndResume_preservesRemainingMilliseconds(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val timer = CascadeTimer(
+            session = testSession,
+            stateMachine = TimerStateMachine(),
+            clock = fakeClock
+        )
+
+        // Act
+        timer.start()
+        fakeClock.advanceMillis(20_123L)
+        timer.update()
+        timer.pause()
+
+        // Assert
+        assertEquals(TimerState.PAUSED, timer.state)
+        assertEquals(39_877L, timer.remainingMillis)
+
+        // Act
+        timer.resume()
+        fakeClock.advanceMillis(10_000L)
+        timer.update()
+
+        // Assert
+        assertEquals(TimerState.STUDYING, timer.state)
+        assertEquals(29_877L, timer.remainingMillis)
     }
 
 }
