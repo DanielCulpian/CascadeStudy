@@ -306,4 +306,72 @@ class TimerViewModelTest{
         assertEquals(0, viewModel.uiState.value.remainingSeconds)
 
     }
+
+    // Verifies starting a ViewModel with already running session does nothing
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun start_whenAlreadyRunning_doesNothing(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = TimerViewModel(
+            session = testSession,
+            clock = fakeClock
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(20_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        viewModel.start()
+
+        // Assert
+        assertEquals(TimerState.STUDYING, viewModel.uiState.value.state)
+        assertEquals(40L, viewModel.uiState.value.remainingSeconds)
+        assertEquals(0, viewModel.uiState.value.currentIntervalIndex)
+    }
+
+    // Verifies pausing a ViewModel with already paused session does nothing
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun pause_whenAlreadyPaused_doesNothing(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = TimerViewModel(
+            session = testSession,
+            clock = fakeClock
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(20_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        viewModel.pause()
+        viewModel.pause()
+
+        // Assert
+        assertEquals(TimerState.PAUSED, viewModel.uiState.value.state)
+        assertEquals(40L, viewModel.uiState.value.remainingSeconds)
+    }
+
+    // Verifies resuming a ViewModel with already started session does nothing
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun resume_whenNotPaused_doesNothing(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = TimerViewModel(
+            session = testSession,
+            clock = fakeClock
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(20_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        viewModel.resume()
+
+        // Assert
+        assertEquals(TimerState.STUDYING, viewModel.uiState.value.state)
+        assertEquals(40L, viewModel.uiState.value.remainingSeconds)
+    }
 }
