@@ -86,21 +86,27 @@ class TimerViewModel(
 
     // Pauses the timer and stops periodic updates
     fun pause(){
-        timer.pause()
+        if(!timer.pause())
+            return
+
         updateUIState()
         stopUpdating()
     }
 
     // Resumes the timer and restarts periodic updates
     fun resume(){
-        timer.resume()
+        if(!timer.resume())
+            return
+
         updateUIState()
         startUpdating()
     }
 
     // Resets the timer to IDLE and stops periodic updates
     fun reset(){
-        timer.reset()
+        if(!timer.reset())
+            return
+
         updateUIState()
         stopUpdating()
     }
