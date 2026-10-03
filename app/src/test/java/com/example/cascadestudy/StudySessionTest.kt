@@ -3,8 +3,10 @@ package com.example.cascadestudy
 import com.example.cascadestudy.domain.StudySession
 import org.junit.Test
 
+// Unit tests for StudySession
 class StudySessionTest {
 
+    // Valid study session with positive intervals and rest duration
     @Test(expected = IllegalArgumentException::class)
     fun emptyIntervals_areNotAllowed(){
         StudySession(
@@ -13,6 +15,7 @@ class StudySessionTest {
         )
     }
 
+    // Valid study session with positive intervals and rest duration
     @Test(expected = IllegalArgumentException::class)
     fun nonPositiveIntervals_areNotAllowed(){
         StudySession(
@@ -21,6 +24,7 @@ class StudySessionTest {
         )
     }
 
+    // Valid study session with positive intervals and rest duration
     @Test(expected = IllegalArgumentException::class)
     fun nonPositiveRestDuration_isNotAllowed(){
         StudySession(

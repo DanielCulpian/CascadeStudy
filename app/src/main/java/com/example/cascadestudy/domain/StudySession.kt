@@ -6,6 +6,7 @@ data class StudySession(
     val intervals: List<Int> = listOf(60, 50, 40, 30, 20, 10), // Main study intervals
     val restDurationMinutes: Int = 10 // Main rest time
 ){
+    // Validates the study session parameters
     init{
         require(intervals.isNotEmpty()){
             "Study session must have at least one interval."
