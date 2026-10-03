@@ -117,14 +117,14 @@ class CascadeTimer(
     }
 
     // Updates remaining time and triggers transitions when time reaches zero
-    fun update(): Boolean{
-        val endTime = endTimeMillis ?: return false
+    fun update(){
+        val endTime = endTimeMillis ?: return
 
         val remainingMillis = endTime - clock.nowMillis()
 
         if(remainingMillis > 0){
             this.remainingMillis = remainingMillis
-            return false
+            return
         }
 
         this.remainingMillis = 0
@@ -134,7 +134,5 @@ class CascadeTimer(
             TimerState.RESTING -> restFinished()
             else -> {}
         }
-
-        return true
     }
 }
