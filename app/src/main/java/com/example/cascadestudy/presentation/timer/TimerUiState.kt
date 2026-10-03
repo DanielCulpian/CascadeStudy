@@ -6,5 +6,6 @@ import com.example.cascadestudy.domain.TimerState
 data class TimerUiState(
     val state: TimerState,
     val remainingSeconds: Long,
-    val currentIntervalIndex: Int
+    val currentIntervalIndex: Int,
+    val totalIntervals: Int
 )

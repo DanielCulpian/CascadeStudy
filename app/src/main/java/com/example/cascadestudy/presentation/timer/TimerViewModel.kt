@@ -39,7 +39,8 @@ class TimerViewModel(
         TimerUiState(
             state = TimerState.IDLE,
             remainingSeconds = 0L,
-            currentIntervalIndex = 0
+            currentIntervalIndex = 0,
+            totalIntervals = session.intervals.size
         )
     )
     val uiState: StateFlow<TimerUiState> = _uiState.asStateFlow()
@@ -49,7 +50,8 @@ class TimerViewModel(
         _uiState.value = TimerUiState(
             state = timer.state,
             remainingSeconds = timer.remainingSeconds,
-            currentIntervalIndex = timer.currentIntervalIndex
+            currentIntervalIndex = timer.currentIntervalIndex,
+            totalIntervals = session.intervals.size
         )
     }
 

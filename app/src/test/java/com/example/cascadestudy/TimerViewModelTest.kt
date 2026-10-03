@@ -374,4 +374,21 @@ class TimerViewModelTest{
         assertEquals(TimerState.STUDYING, viewModel.uiState.value.state)
         assertEquals(40L, viewModel.uiState.value.remainingSeconds)
     }
+
+    // Verifies that the current interval index is exposed
+    @Test
+    fun start_exposesTotalNumberOfIntervals(){
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = TimerViewModel(
+            session = testSession,
+            clock = fakeClock
+        )
+
+        // Act
+        viewModel.start()
+
+        // Assert
+        assertEquals(3, viewModel.uiState.value.totalIntervals)
+    }
 }
