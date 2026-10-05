@@ -1,22 +1,28 @@
 # Cascade Study
 
-Cascade Study is a study-time management application based on a **cascade study technique**.
+Cascade Study is an Android study-time management application based on the **cascade study technique**.
 
-The idea is simple: instead of studying for one fixed period, a session is divided into progressively shorter study intervals separated by short breaks.
+Instead of studying for fixed-length blocks, a session is divided into **progressively shorter study intervals** separated by short break periods. This makes long study sessions easier to maintain by gradually reducing the effort required as fatigue sets in.
 
-The current default session is:
+---
 
-**60 → 50 → 40 → 30 → 20 → 10 minutes**
+## Session Presets
 
-with a **10-minute break between each study interval**.
+Cascade Study currently supports two main preset configurations:
 
-This results in:
+### 1. Full Session (`FULL`)
+- **Interval sequence:** `60 → 50 → 40 → 30 → 20 → 10` minutes
+- **Rest duration:** `10` minutes between intervals
+- **Total study time:** 210 minutes (3.5 hours)
+- **Total rest time:** 50 minutes
+- **Total duration:** 260 minutes (4h 20m)
 
-- 210 minutes of total study time
-- 50 minutes of total break time
-- 260 minutes (4h 20m) for the complete session
-
-The project is currently under development as an Android application.
+### 2. Short Session (`SHORT`)
+- **Interval sequence:** `30 → 20 → 10` minutes
+- **Rest duration:** `10` minutes between intervals
+- **Total study time:** 60 minutes (1 hour)
+- **Total rest time:** 20 minutes
+- **Total duration:** 80 minutes (1h 20m)
 
 ---
 
@@ -24,72 +30,28 @@ The project is currently under development as an Android application.
 
 🚧 **Pre-beta / Active development**
 
-The core timer domain is already implemented and covered by unit tests. The Compose UI is currently being developed and refined.
+The project includes a complete timer domain, multiple session presets, screen navigation, and full unit test coverage for domain rules and ViewModels.
 
-Current functionality includes:
-
-- Starting a study session
-- Countdown timer
-- Automatic transition from study to rest
-- Automatic transition from rest to the next study interval
-- Pausing and resuming
-- Resetting a session
-- Detecting the end of the complete session
-- Displaying the current study interval
-- Material 3 based UI
-- Automatic update of the UI while the timer is running
-- Unit tests for the timer domain and ViewModel
-
-Future versions will focus on configuration, persistence, notifications/audio feedback and a more complete user experience.
-
----
-
-## The Cascade Technique
-
-A standard session consists of progressively shorter study intervals:
-
-```text
-Study   60 min
-Rest    10 min
-
-Study   50 min
-Rest    10 min
-
-Study   40 min
-Rest    10 min
-
-Study   30 min
-Rest    10 min
-
-Study   20 min
-Rest    10 min
-
-Study   10 min
-````
-
-The final study interval is not followed by a break.
-
-The technique is intended to make long study sessions more manageable by gradually reducing the length of each subsequent study period.
-
-The session configuration is represented by the `StudySession` domain model, allowing different interval configurations to be supported in the future.
+### Current Functionality
+- **Session Selection Screen:** Choose between preset session types (`FULL` or `SHORT`).
+- **Timer Screen:** Responsive Material 3 UI displaying state, remaining time, and interval progress.
+- **State Machine Transitions:**
+  - Start session from the first interval.
+  - Automatic transition from study to rest.
+  - Automatic transition from rest to the next study interval.
+  - Pause and resume while preserving remaining interval time.
+  - Reset session back to idle.
+  - Automatic detection of overall session completion.
+- **Architecture & Quality:**
+  - Clean separation of concerns (Domain, Presentation, UI).
+  - Testable time abstraction (`TimerClock` / `FakeTimerClock`).
+  - Unit tests covering domain logic, state machine, presets, and ViewModel state flows.
 
 ---
 
 ## Architecture
 
-The Android application follows a separation between **domain logic** and **presentation logic**.
-
-The current architecture is based on:
-
-* Kotlin
-* Jetpack Compose
-* MVVM
-* Material 3
-* Kotlin Coroutines
-* StateFlow
-* JUnit
-
-The project is organized around the following structure:
+The application strictly separates **business domain logic** from **presentation and Compose UI**.
 
 ```text
 com.example.cascadestudy
@@ -98,12 +60,17 @@ com.example.cascadestudy
 ├── domain
 │   ├── CascadeTimer.kt
 │   ├── StudySession.kt
+│   ├── StudySessionPreset.kt
+│   ├── StudySessionPresetExtensions.kt
 │   ├── TimerClock.kt
 │   ├── TimerEvent.kt
 │   ├── TimerState.kt
 │   └── TimerStateMachine.kt
 │
 ├── presentation
+│   ├── AppScreen.kt
+│   ├── selection
+│   │   └── SessionSelectionScreen.kt
 │   └── timer
 │       ├── TimerUiState.kt
 │       ├── TimerViewModel.kt
@@ -116,355 +83,69 @@ com.example.cascadestudy
         └── Type.kt
 ```
 
-### Domain
+### Key Components
 
-The domain layer contains the timer's business rules and does not depend on the Compose UI.
+#### 1. Domain Layer (`domain/`)
+- **`StudySession`**: Data class representing interval durations and rest time. Includes parameter validation.
+- **`StudySessionPreset`**: Enum defining available presets (`FULL`, `SHORT`, `CUSTOM`).
+- **`StudySessionPresetExtensions`**: Extension `StudySessionPreset.toStudySession()` mapping presets to domain session models.
+- **`TimerState`**: Enum representing `IDLE`, `STUDYING`, `RESTING`, `PAUSED`, and `FINISHED`.
+- **`TimerEvent`**: Sealed interface representing events that trigger state transitions.
+- **`TimerStateMachine`**: State machine encapsulating valid state transitions.
+- **`CascadeTimer`**: Core timer engine that coordinates session, state machine, and clock calculations using absolute timestamp comparison.
+- **`TimerClock`**: Interface abstracting system time (`SystemTimerClock` for production, `FakeTimerClock` for tests).
 
-#### `StudySession`
-
-Defines the configuration of a study session:
-
-```kotlin
-StudySession(
-    intervals = listOf(60, 50, 40, 30, 20, 10),
-    restDurationMinutes = 10
-)
-```
-
-It also validates the session configuration.
-
-#### `TimerState`
-
-Represents the possible states of the timer:
-
-```text
-IDLE
-STUDYING
-RESTING
-PAUSED
-FINISHED
-```
-
-#### `TimerEvent`
-
-Represents events that can affect the timer state:
-
-```text
-Start
-Pause
-Resume
-Reset
-IntervalFinished
-RestFinished
-```
-
-#### `TimerStateMachine`
-
-Contains the rules for valid state transitions.
-
-For example:
-
-```text
-IDLE
-  ↓ Start
-STUDYING
-  ↓ IntervalFinished
-RESTING
-  ↓ RestFinished
-STUDYING
-```
-
-The state machine also handles:
-
-```text
-STUDYING ──→ PAUSED ──→ STUDYING
-RESTING  ──→ PAUSED ──→ RESTING
-```
-
-and eventually:
-
-```text
-STUDYING
-   ↓
-FINISHED
-```
-
-#### `CascadeTimer`
-
-Acts as the timer controller.
-
-It coordinates:
-
-* `StudySession`
-* `TimerStateMachine`
-* `TimerClock`
-
-It is responsible for:
-
-* Tracking the current interval
-* Calculating the remaining time
-* Starting and ending intervals
-* Handling pauses and resumes
-* Advancing through the cascade
-* Detecting when the session has finished
-
-The timer uses an absolute end time internally rather than simply decrementing a counter every second.
+#### 2. Presentation Layer (`presentation/`)
+- **`AppScreen`**: Enum controlling app navigation (`SESSION_SELECTION`, `TIMER`).
+- **`SessionSelectionScreen`**: Compose screen allowing the user to pick a session preset.
+- **`TimerScreen`**: Compose screen rendering status, countdown, interval counts, and state controls.
+- **`TimerViewModel`**: Manages UI state (`TimerUiState`), coordinates periodic ticker coroutines, and handles `selectPreset()`, `start()`, `pause()`, `resume()`, and `reset()`.
 
 ---
 
-## Time Abstraction
+## App Flow
 
-The timer uses a `TimerClock` abstraction:
-
-```kotlin
-interface TimerClock {
-    fun nowMillis(): Long
-}
+```text
+  ┌───────────────────────────┐
+  │  SessionSelectionScreen   │
+  │  (AppScreen.SELECTION)    │
+  └─────────────┬─────────────┘
+                │ Select Preset (FULL / SHORT)
+                ▼
+  ┌───────────────────────────┐
+  │        TimerScreen        │
+  │    (AppScreen.TIMER)      │
+  └───────────────────────────┘
 ```
-
-The production implementation provides the real system time, while tests use a fake clock.
-
-This allows timer behavior to be tested deterministically without having to actually wait for minutes or hours.
-
-For example:
-
-```kotlin
-val fakeClock = FakeTimerClock()
-
-fakeClock.advanceMillis(20_000L)
-
-timer.update()
-```
-
-This approach is especially important for testing pause/resume behavior and interval transitions.
-
----
-
-## Presentation Layer
-
-The presentation layer currently follows an MVVM-style structure.
-
-### `TimerViewModel`
-
-The ViewModel owns the UI state and coordinates the timer with the Compose UI.
-
-The UI observes:
-
-```kotlin
-StateFlow<TimerUiState>
-```
-
-The ViewModel exposes operations such as:
-
-```kotlin
-start()
-pause()
-resume()
-reset()
-```
-
-The UI does not directly implement timer business logic.
-
-### `TimerUiState`
-
-The UI receives a simplified representation of the timer:
-
-```kotlin
-data class TimerUiState(
-    val state: TimerState,
-    val remainingSeconds: Long,
-    val currentIntervalIndex: Int,
-    val totalIntervals: Int
-)
-```
-
-This keeps the Compose layer focused on presentation rather than domain calculations.
-
----
-
-## UI
-
-The application uses **Jetpack Compose** and **Material 3**.
-
-The current timer screen displays:
-
-* Current timer state
-* Countdown
-* Current interval
-* Total number of intervals
-* Contextual controls for starting, pausing, resuming and resetting
-
-The visual design is still being developed.
-
-The application is being structured around Material 3's `ColorScheme`, with the intention of supporting:
-
-* Light theme
-* Dark theme
-* Automatic theme selection based on the device configuration
-
-The goal is to keep the UI independent from individual hard-coded colors so that both themes can share the same UI components.
 
 ---
 
 ## Testing
 
-Testing is an important part of the project.
+The project emphasizes unit testing domain logic and ViewModel state handling independently of Android framework dependencies.
 
-The timer domain is designed to be testable independently from Android and the Compose UI.
-
-Current tests cover areas such as:
-
-### `StudySession`
-
-* Empty intervals are rejected
-* Non-positive intervals are rejected
-* Invalid rest durations are rejected
-
-### `CascadeTimer`
-
-* Starting a session
-* Study → rest transitions
-* Rest → next study interval transitions
-* Completing the final interval
-* Pausing
-* Resuming
-* Preserving remaining time
-* Resetting
-* Single-interval sessions
-* Remaining-time rounding
-
-### `TimerViewModel`
-
-* UI state transitions
-* Automatic timer updates
-* Pause/resume behavior
-* Reset behavior
-* Automatic session completion
-* Invalid operations
-* Number of configured intervals
-
-A fake clock and coroutine test dispatcher are used to keep tests fast and deterministic.
-
----
-
-## Development Philosophy
-
-The project is intentionally being developed incrementally.
-
-The main goals are:
-
-1. Keep business logic independent from the UI.
-2. Make state transitions explicit.
-3. Make time-based behavior testable.
-4. Avoid putting business logic inside Compose components.
-5. Keep the code simple and maintainable.
-6. Build the application in small, testable steps.
-
-The project is not intended to be just a countdown timer. The long-term goal is to provide a flexible study-session management tool built around the cascade technique.
-
----
-
-## Roadmap
-
-Planned features and improvements include:
-
-### Timer
-
-* [x] Cascade study intervals
-* [x] Rest intervals
-* [x] Pause / resume
-* [x] Reset
-* [x] Automatic interval transitions
-* [x] Session completion
-* [x] Deterministic timer tests
-* [ ] Improved timer lifecycle handling
-* [ ] Monotonic time source for Android
-
-### UI
-
-* [x] Jetpack Compose
-* [x] Material 3
-* [x] Timer screen
-* [x] Basic state-based controls
-* [ ] Refined visual design
-* [ ] Light theme
-* [ ] Dark theme
-* [ ] Automatic system theme support
-* [ ] Progress visualization
-
-### Session Configuration
-
-* [ ] Custom study intervals
-* [ ] Custom rest duration
-* [ ] Preset session lengths
-* [ ] Shorter cascade sessions
-
-For example:
-
-```text
-30 → 20 → 10
-```
-
-### Notifications & Feedback
-
-* [ ] Audio notification when an interval ends
-* [ ] Haptic feedback
-* [ ] Android notifications
-* [ ] Background timer support
-
-### Persistence
-
-* [ ] Save user preferences
-* [ ] Save custom session configurations
-* [ ] Session history
-* [ ] Study statistics
-
-### Future Platforms
-
-The original concept was first prototyped in Python before the Android application was started.
-
-The original prototype used Tkinter and is intended to remain a useful reference for the core concept.
-
-A future desktop version may provide a dedicated desktop implementation.
-
----
-
-## Project Origins
-
-The first version of Cascade Study was created as a small Python prototype to validate the cascade study concept.
-
-The prototype focused on the basic timing sequence before moving to the Android implementation.
-
-The Android version is being developed with a stronger focus on:
-
-* Architecture
-* Testability
-* Separation of concerns
-* Maintainability
-* Extensibility
-
-The Android application is therefore not simply a direct port of the original prototype.
+### Covered Test Areas
+- **`StudySessionTest`**: Validates input bounds (empty intervals, non-positive values).
+- **`StudySessionPresetTest`**: Ensures `FULL` and `SHORT` presets map to correct interval configurations.
+- **`CascadeTimerTest`**: Verifies state transitions, precise interval countdowns, pause/resume time preservation, and completion.
+- **`TimerViewModelTest`**: Tests UI state updates, periodic ticker flows, reset actions, and preset selection updates.
 
 ---
 
 ## Tech Stack
 
-| Technology        | Purpose                    |
-| ----------------- | -------------------------- |
-| Kotlin            | Main programming language  |
-| Android           | Target platform            |
-| Jetpack Compose   | UI                         |
-| Material 3        | Design system              |
-| MVVM              | Presentation architecture  |
-| Kotlin Coroutines | Asynchronous timer updates |
-| StateFlow         | Reactive UI state          |
-| JUnit             | Unit testing               |
-| Gradle Kotlin DSL | Build configuration        |
+| Technology | Purpose |
+| --- | --- |
+| **Kotlin** | Language |
+| **Android Jetpack Compose** | Declarative UI |
+| **Material 3** | Theme & Design System |
+| **MVVM** | Architecture Pattern |
+| **Kotlin Coroutines & StateFlow** | Reactive state management & asynchronous timer updates |
+| **JUnit 4** | Unit testing framework |
+| **Gradle (Kotlin DSL)** | Build system |
 
 ---
 
 ## License
 
-License information will be added when the project reaches the appropriate stage for publication.
-
-```
+License information will be added upon official publication.
