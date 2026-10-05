@@ -20,15 +20,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlin.time.Duration.Companion.seconds
 
 // ViewModel managing timer UI state and coroutine updates
+import com.example.cascadestudy.domain.StudySessionPreset
+import com.example.cascadestudy.domain.toStudySession
+
 class TimerViewModel(
-    private val session: StudySession = StudySession(),
+    private var session: StudySession = StudySessionPreset.FULL.toStudySession(),
     private val clock: TimerClock = SystemTimerClock()
 ): ViewModel() {
-    // Job to handle periodic ticker updates
     private var updateJob: Job? = null
 
-    // Domain timer instance
-    private val timer = CascadeTimer(
+    private var timer = CascadeTimer(
         session = session,
         stateMachine = TimerStateMachine(),
         clock = clock
@@ -53,6 +54,18 @@ class TimerViewModel(
             currentIntervalIndex = timer.currentIntervalIndex,
             totalIntervals = session.intervals.size
         )
+    }
+
+    // Selects a study session preset and updates the timer
+    fun selectPreset(preset: StudySessionPreset) {
+        stopUpdating()
+        session = preset.toStudySession()
+        timer = CascadeTimer(
+            session = session,
+            stateMachine = TimerStateMachine(),
+            clock = clock
+        )
+        updateUIState()
     }
 
     // Starts the periodic coroutine ticker to update the timer every second
