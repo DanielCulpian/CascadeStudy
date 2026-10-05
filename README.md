@@ -48,7 +48,6 @@ Future versions will focus on configuration, persistence, notifications/audio fe
 
 A standard session consists of progressively shorter study intervals:
 
-```text
 Study   60 min
 Rest    10 min
 
