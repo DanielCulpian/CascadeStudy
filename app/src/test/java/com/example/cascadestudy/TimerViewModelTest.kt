@@ -1,14 +1,19 @@
 package com.example.cascadestudy
 
+import com.example.cascadestudy.data.repository.SessionRepository
 import com.example.cascadestudy.domain.StudySession
+import com.example.cascadestudy.domain.SystemTimerClock
+import com.example.cascadestudy.domain.TimerClock
 import com.example.cascadestudy.domain.TimerState
 import com.example.cascadestudy.presentation.timer.TimerViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
 // Unit tests for TimerViewModel behavior, coroutines, and UI state flows
-class TimerViewModelTest{
+class TimerViewModelTest {
 
     private val testSession = StudySession(
         intervals = listOf(1, 1, 1),
@@ -18,11 +23,27 @@ class TimerViewModelTest{
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private fun createViewModel(
+        session: StudySession = testSession,
+        clock: TimerClock = SystemTimerClock()
+    ): TimerViewModel {
+        val fakeDao = FakeCompletedSessionDao()
+        val repository = SessionRepository(
+            dao = fakeDao,
+            ioDispatcher = Dispatchers.Unconfined
+        )
+        return TimerViewModel(
+            session = session,
+            clock = clock,
+            sessionRepository = repository
+        )
+    }
+
     // Verifies starting the ViewModel updates UI state to STUDYING
     @Test
-    fun start_changesUiStateToStudying(){
+    fun start_changesUiStateToStudying() {
         // Set
-        val viewModel = TimerViewModel()
+        val viewModel = createViewModel()
 
         // Act
         viewModel.start()
@@ -33,9 +54,9 @@ class TimerViewModelTest{
 
     // Verifies resetting the ViewModel updates UI state to IDLE
     @Test
-    fun reset_changesUiStateToIdle(){
+    fun reset_changesUiStateToIdle() {
         // Set
-        val viewModel = TimerViewModel()
+        val viewModel = createViewModel()
 
         // Act
         viewModel.start()
@@ -47,13 +68,10 @@ class TimerViewModelTest{
 
     // Verifies manual update recalculates remaining seconds after advancing time
     @Test
-    fun update_after20Seconds_updateRemainingTime(){
+    fun update_after20Seconds_updateRemainingTime() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -66,13 +84,10 @@ class TimerViewModelTest{
 
     // Verifies UI state changes to RESTING when a study interval finishes
     @Test
-    fun update_whenStudyIntervalFinishes_changesUiStateToResting(){
+    fun update_whenStudyIntervalFinishes_changesUiStateToResting() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -86,13 +101,10 @@ class TimerViewModelTest{
 
     // Verifies UI state changes back to STUDYING when a rest period finishes
     @Test
-    fun update_whenRestFinishes_changesUiStateToStudying(){
+    fun update_whenRestFinishes_changesUiStateToStudying() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -109,13 +121,10 @@ class TimerViewModelTest{
 
     // Verifies pausing the ViewModel updates UI state to PAUSED
     @Test
-    fun pause_changesUiStateToPaused(){
+    fun pause_changesUiStateToPaused() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -129,13 +138,10 @@ class TimerViewModelTest{
 
     // Verifies resuming from PAUSED continues tracking time correctly
     @Test
-    fun resume_whenPaused_continueFromRemainingTime(){
+    fun resume_whenPaused_continueFromRemainingTime() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -151,15 +157,12 @@ class TimerViewModelTest{
     }
 
     // Verifies coroutine ticker automatically updates remaining time on coroutine dispatch
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun start_automaticallyUpdatesRemainingTime(){
+    fun start_automaticallyUpdatesRemainingTime() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -171,15 +174,12 @@ class TimerViewModelTest{
     }
 
     // Verifies pausing stops the automatic coroutine ticker updates
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun pause_stopsAutomaticUpdates(){
+    fun pause_stopsAutomaticUpdates() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -195,15 +195,12 @@ class TimerViewModelTest{
     }
 
     // Verifies resuming restarts the automatic coroutine ticker updates
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun resume_restartsAutomaticUpdates(){
+    fun resume_restartsAutomaticUpdates() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -220,15 +217,12 @@ class TimerViewModelTest{
     }
 
     // Verifies UI state changes to FINISHED and stops ticker when the last interval ends
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun update_whenLastIntervalFinishes_changesUIStateToFinished(){
+    fun update_whenLastIntervalFinishes_changesUIStateToFinished() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -249,15 +243,12 @@ class TimerViewModelTest{
     }
 
     // Verifies UI state changes to FINISHED when the session finishes
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun sessionFinishes_stopAutomaticUpdates(){
+    fun sessionFinishes_stopAutomaticUpdates() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -283,15 +274,12 @@ class TimerViewModelTest{
     }
 
     // Verifies resetting stops automatic updates
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun reset_stopAutomaticUpdates(){
+    fun reset_stopAutomaticUpdates() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -304,19 +292,15 @@ class TimerViewModelTest{
         // Assert
         assertEquals(TimerState.IDLE, viewModel.uiState.value.state)
         assertEquals(0, viewModel.uiState.value.remainingSeconds)
-
     }
 
     // Verifies starting a ViewModel with already running session does nothing
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun start_whenAlreadyRunning_doesNothing(){
+    fun start_whenAlreadyRunning_doesNothing() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -331,15 +315,12 @@ class TimerViewModelTest{
     }
 
     // Verifies pausing a ViewModel with already paused session does nothing
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun pause_whenAlreadyPaused_doesNothing(){
+    fun pause_whenAlreadyPaused_doesNothing() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -354,15 +335,12 @@ class TimerViewModelTest{
     }
 
     // Verifies resuming a ViewModel with already started session does nothing
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun resume_whenNotPaused_doesNothing(){
+    fun resume_whenNotPaused_doesNothing() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
@@ -377,13 +355,10 @@ class TimerViewModelTest{
 
     // Verifies that the current interval index is exposed
     @Test
-    fun start_exposesTotalNumberOfIntervals(){
+    fun start_exposesTotalNumberOfIntervals() {
         // Set
         val fakeClock = FakeTimerClock()
-        val viewModel = TimerViewModel(
-            session = testSession,
-            clock = fakeClock
-        )
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
 
         // Act
         viewModel.start()
