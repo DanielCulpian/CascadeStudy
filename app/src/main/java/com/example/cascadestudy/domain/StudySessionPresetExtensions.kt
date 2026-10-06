@@ -1,5 +1,6 @@
 package com.example.cascadestudy.domain
 
+// Converts a StudySessionPreset enum entry into a corresponding StudySession domain instance
 fun StudySessionPreset.toStudySession(): StudySession {
     return when (this) {
         StudySessionPreset.FULL -> StudySession(

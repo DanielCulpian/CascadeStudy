@@ -50,7 +50,7 @@ private fun formatTime(totalSeconds: Long): String {
     return "%02d:%02d".format(minutes, seconds)
 }
 
-// Main Composable screen for displaying timer state and control actions
+// Main Composable screen for displaying timer state, statistics, and control actions
 @Composable
 fun TimerScreen(
     uiState: TimerUiState,
@@ -70,6 +70,68 @@ fun TimerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Statistics Card displaying historical and weekly study hours
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Histórico",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+                    Text(
+                        text = "%.1f h".format(uiState.totalHistoricalHours),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Esta Semana",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+                    Text(
+                        text = "%.1f h".format(uiState.weeklyHours),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
+
         // Card wrapper displaying current status, time remaining, and interval info
         Card(
             modifier = Modifier.fillMaxWidth(),
