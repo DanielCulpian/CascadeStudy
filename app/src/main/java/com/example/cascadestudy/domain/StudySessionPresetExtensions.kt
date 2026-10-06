@@ -12,7 +12,5 @@ fun StudySessionPreset.toStudySession(): StudySession {
             intervals = listOf(30, 20, 10),
             restDurationMinutes = 10
         )
-
-        else -> throw IllegalArgumentException("Unsupported preset")
     }
 }
