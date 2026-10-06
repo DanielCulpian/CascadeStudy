@@ -2,6 +2,7 @@ package com.example.cascadestudy
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -12,7 +13,7 @@ import com.example.cascadestudy.presentation.timer.TimerScreen
 import com.example.cascadestudy.presentation.timer.TimerViewModel
 import com.example.cascadestudy.ui.theme.CascadeStudyTheme
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.cascadestudy.presentation.AppScreen
 import androidx.compose.runtime.setValue
 
@@ -29,7 +30,7 @@ class MainActivity : ComponentActivity() {
             CascadeStudyTheme {
                 val uiState by viewModel.uiState.collectAsState()
 
-                var currentScreen by remember {
+                var currentScreen by rememberSaveable {
                     mutableStateOf(AppScreen.SESSION_SELECTION)
                 }
 
@@ -43,6 +44,11 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     AppScreen.TIMER -> {
+                        BackHandler {
+                            viewModel.reset()
+                            currentScreen = AppScreen.SESSION_SELECTION
+                        }
+
                         TimerScreen(
                             uiState = uiState,
                             onStart = viewModel::start,
