@@ -15,14 +15,17 @@ import org.junit.Test
 // Unit tests for TimerViewModel behavior, coroutines, and UI state flows
 class TimerViewModelTest {
 
+    // Test session with predefined intervals and rest duration
     private val testSession = StudySession(
         intervals = listOf(1, 1, 1),
         restDurationMinutes = 1
     )
 
+    // Rule to provide a test dispatcher for coroutines
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    // Creates a TimerViewModel with custom session and clock settings
     private fun createViewModel(
         session: StudySession = testSession,
         clock: TimerClock = SystemTimerClock()
