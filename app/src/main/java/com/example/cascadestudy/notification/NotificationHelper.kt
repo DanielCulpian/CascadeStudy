@@ -63,7 +63,7 @@ open class NotificationHelper(private val context: Context) {
     // Builds and displays a notification if permission is granted
     private fun showNotification(title: String, message: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
