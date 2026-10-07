@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.cascadestudy"
-        minSdk = 36
+        minSdk = 26
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
@@ -43,6 +43,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.junit.ktx)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -62,6 +63,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
