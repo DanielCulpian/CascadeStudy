@@ -5,6 +5,7 @@ import com.example.cascadestudy.domain.StudySession
 import com.example.cascadestudy.domain.SystemTimerClock
 import com.example.cascadestudy.domain.TimerClock
 import com.example.cascadestudy.domain.TimerState
+import com.example.cascadestudy.notification.NotificationHelper
 import com.example.cascadestudy.presentation.timer.TimerViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-// Unit tests for TimerViewModel behavior, coroutines, and UI state flows
+// Unit tests for TimerViewModel behavior, coroutines, UI state flows, and notification triggers
 class TimerViewModelTest {
 
     // Test session with predefined intervals and rest duration
@@ -25,10 +26,11 @@ class TimerViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    // Creates a TimerViewModel with custom session and clock settings
+    // Creates a TimerViewModel with custom session, clock, and notification helper settings
     private fun createViewModel(
         session: StudySession = testSession,
-        clock: TimerClock = SystemTimerClock()
+        clock: TimerClock = SystemTimerClock(),
+        notificationHelper: NotificationHelper? = null
     ): TimerViewModel {
         val fakeDao = FakeCompletedSessionDao()
         val repository = SessionRepository(
@@ -38,7 +40,8 @@ class TimerViewModelTest {
         return TimerViewModel(
             session = session,
             clock = clock,
-            sessionRepository = repository
+            sessionRepository = repository,
+            notificationHelper = notificationHelper
         )
     }
 
@@ -53,6 +56,71 @@ class TimerViewModelTest {
 
         // Assert
         assertEquals(TimerState.STUDYING, viewModel.uiState.value.state)
+    }
+
+    // Verifies starting a study interval triggers the interval started notification
+    @Test
+    fun start_triggersIntervalStartedNotification() {
+        // Set
+        val fakeNotificationHelper = FakeNotificationHelper()
+        val viewModel = createViewModel(notificationHelper = fakeNotificationHelper)
+
+        // Act
+        viewModel.start()
+
+        // Asser
+        assertEquals(1, fakeNotificationHelper.intervalStartedCount)
+    }
+
+    // Verifies completing a study interval triggers the rest started notification
+    @Test
+    fun studyIntervalFinished_triggersRestStartedNotification() {
+        // Set
+        val fakeClock = FakeTimerClock()
+        val fakeNotificationHelper = FakeNotificationHelper()
+        val viewModel = createViewModel(
+            session = testSession,
+            clock = fakeClock,
+            notificationHelper = fakeNotificationHelper
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(60_000L)
+        viewModel.update()
+
+        // Assert
+        assertEquals(1, fakeNotificationHelper.restStartedCount)
+    }
+
+    // Verifies completing the session triggers the session finished notification
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun sessionFinished_triggersSessionFinishedNotification() {
+        // Set
+        val fakeClock = FakeTimerClock()
+        val fakeNotificationHelper = FakeNotificationHelper()
+        val viewModel = createViewModel(
+            session = testSession,
+            clock = fakeClock,
+            notificationHelper = fakeNotificationHelper
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+
+        // Assert
+        assertEquals(1, fakeNotificationHelper.sessionFinishedCount)
     }
 
     // Verifies resetting the ViewModel updates UI state to IDLE
