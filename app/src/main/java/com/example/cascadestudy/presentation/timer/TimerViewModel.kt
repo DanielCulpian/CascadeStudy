@@ -12,6 +12,7 @@ import com.example.cascadestudy.domain.TimerState
 import com.example.cascadestudy.domain.TimerStateMachine
 import com.example.cascadestudy.domain.toStudySession
 import com.example.cascadestudy.notification.NotificationHelper
+import com.example.cascadestudy.sound.SoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,12 +22,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
-// ViewModel managing timer UI state, coroutine ticker updates, session statistics, and notifications
+// ViewModel managing timer UI state, coroutine ticker updates, session statistics, notifications, and audio effects
 class TimerViewModel(
     private var session: StudySession = StudySessionPreset.FULL.toStudySession(),
     private val clock: TimerClock = SystemTimerClock(),
     private val sessionRepository: SessionRepository,
-    private val notificationHelper: NotificationHelper? = null
+    private val notificationHelper: NotificationHelper? = null,
+    private val soundManager: SoundManager? = null
 ) : ViewModel() {
 
     private var updateJob: Job? = null
@@ -78,10 +80,10 @@ class TimerViewModel(
         }
     }
 
-    // Updates the exposed StateFlow and handles notification triggers on state changes
+    // Updates the exposed StateFlow and handles notification and sound triggers on state changes
     private fun updateUIState() {
         val newState = timer.state
-        handleNotifications(newState)
+        handleNotificationsAndSounds(newState)
 
         _uiState.update { currentState ->
             currentState.copy(
@@ -93,8 +95,8 @@ class TimerViewModel(
         }
     }
 
-    // Triggers relevant notification based on state transition
-    private fun handleNotifications(newState: TimerState) {
+    // Triggers relevant notification and sound effect based on state transition
+    private fun handleNotificationsAndSounds(newState: TimerState) {
         if (newState == previousState) return
 
         when (newState) {
@@ -104,16 +106,19 @@ class TimerViewModel(
                         currentInterval = timer.currentIntervalIndex + 1,
                         totalIntervals = session.intervals.size
                     )
+                    soundManager?.playStartStudySound()
                 }
             }
             TimerState.RESTING -> {
                 if (previousState == TimerState.STUDYING) {
                     notificationHelper?.showRestStartedNotification()
+                    soundManager?.playFinishStudySound()
                 }
             }
             TimerState.FINISHED -> {
                 if (previousState == TimerState.STUDYING || previousState == TimerState.RESTING) {
                     notificationHelper?.showSessionFinishedNotification()
+                    soundManager?.playFinishSessionSound()
                 }
             }
             else -> {}
@@ -213,5 +218,11 @@ class TimerViewModel(
         if (timer.state == TimerState.FINISHED) {
             onSessionFinished()
         }
+    }
+
+    // TODO: Waiting to finish implementing this method
+    override fun onCleared() {
+        super.onCleared()
+        soundManager?.release()
     }
 }

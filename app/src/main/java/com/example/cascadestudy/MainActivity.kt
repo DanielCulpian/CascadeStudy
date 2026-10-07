@@ -25,6 +25,7 @@ import com.example.cascadestudy.presentation.AppScreen
 import com.example.cascadestudy.presentation.selection.SessionSelectionScreen
 import com.example.cascadestudy.presentation.timer.TimerScreen
 import com.example.cascadestudy.presentation.timer.TimerViewModel
+import com.example.cascadestudy.sound.SoundManager
 import com.example.cascadestudy.ui.theme.CascadeStudyTheme
 
 class MainActivity : ComponentActivity() {
@@ -38,10 +39,12 @@ class MainActivity : ComponentActivity() {
                 val database = AppDatabase.getDatabase(applicationContext)
                 val repository = SessionRepository(database.completedSessionDao())
                 val notificationHelper = NotificationHelper(applicationContext)
+                val soundManager = SoundManager(applicationContext)
                 @Suppress("UNCHECKED_CAST")
                 return TimerViewModel(
                     sessionRepository = repository,
-                    notificationHelper = notificationHelper
+                    notificationHelper = notificationHelper,
+                    soundManager = soundManager
                 ) as T
             }
         }

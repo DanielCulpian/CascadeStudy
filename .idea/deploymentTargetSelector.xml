@@ -6,10 +6,6 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="CompletedSessionDaoTest">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
       <SelectionState runConfigName="insertSession_updatesTotalStudySeconds()">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
