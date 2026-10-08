@@ -211,6 +211,29 @@ class TimerViewModel(
         stopUpdating()
     }
 
+    // Finishes the study session early, plays completion sound, posts notification, and saves accumulated study time
+    fun finishSessionEarly() {
+        if (timer.state == TimerState.IDLE) return
+
+        val elapsedStudySeconds = timer.getElapsedStudySeconds()
+
+        // Trigger session completion notification and sound
+        notificationHelper?.showSessionFinishedNotification()
+        soundManager?.playFinishSessionSound()
+
+        // Save accumulated study time to database
+        if (elapsedStudySeconds > 0) {
+            viewModelScope.launch {
+                sessionRepository.saveCompletedSession(
+                    durationSeconds = elapsedStudySeconds,
+                    presetType = currentPreset.name
+                )
+            }
+        }
+
+        reset()
+    }
+
     // Manual tick update for timer state and remaining time
     fun update() {
         timer.update()
