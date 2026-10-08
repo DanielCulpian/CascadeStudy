@@ -1,151 +1,145 @@
-# Cascade Study
+# Cascade Study (v1.0.0)
 
-Cascade Study is an Android study-time management application based on the **cascade study technique**.
+**Cascade Study** is a modern Android study-time management application based on the **cascade study technique**.
 
-Instead of studying for fixed-length blocks, a session is divided into **progressively shorter study intervals** separated by short break periods. This makes long study sessions easier to maintain by gradually reducing the effort required as fatigue sets in.
+Instead of studying in fixed-length blocks, a session is divided into **progressively shorter study intervals** separated by rest periods. This technique prevents mental fatigue and makes long study sessions easier to maintain.
 
----
-
-## Session Presets
-
-Cascade Study currently supports two main preset configurations:
-
-### 1. Full Session (`FULL`)
-- **Interval sequence:** `60 → 50 → 40 → 30 → 20 → 10` minutes
-- **Rest duration:** `10` minutes between intervals
-- **Total study time:** 210 minutes (3.5 hours)
-- **Total rest time:** 50 minutes
-- **Total duration:** 260 minutes (4h 20m)
-
-### 2. Short Session (`SHORT`)
-- **Interval sequence:** `30 → 20 → 10` minutes
-- **Rest duration:** `10` minutes between intervals
-- **Total study time:** 60 minutes (1 hour)
-- **Total rest time:** 20 minutes
-- **Total duration:** 80 minutes (1h 20m)
+Designed and developed by **[Daniel Culpian](https://github.com/DanielCulpian)**.
 
 ---
 
-## Current Status
+## 🌟 Key Features
 
-🚧 **Pre-beta / Active development**
-
-The project includes a complete timer domain, multiple session presets, screen navigation, and full unit test coverage for domain rules and ViewModels.
-
-### Current Functionality
-- **Session Selection Screen:** Choose between preset session types (`FULL` or `SHORT`).
-- **Timer Screen:** Responsive Material 3 UI displaying state, remaining time, and interval progress.
-- **State Machine Transitions:**
-  - Start session from the first interval.
-  - Automatic transition from study to rest.
-  - Automatic transition from rest to the next study interval.
-  - Pause and resume while preserving remaining interval time.
-  - Reset session back to idle.
-  - Automatic detection of overall session completion.
-- **Architecture & Quality:**
-  - Clean separation of concerns (Domain, Presentation, UI).
-  - Testable time abstraction (`TimerClock` / `FakeTimerClock`).
-  - Unit tests covering domain logic, state machine, presets, and ViewModel state flows.
+* 🎯 **Cascade Study Engine:** Automatically coordinates study and rest intervals with smooth state transitions (`IDLE`, `STUDYING`, `RESTING`, `PAUSED`, `FINISHED`).
+* ⚡ **Preset Configurations:**
+  * **Full Session (`FULL`):** `60 → 50 → 40 → 30 → 20 → 10` minutes with 10-minute rest breaks (Total: 4h 20m).
+  * **Short Session (`SHORT`):** `30 → 20 → 10` minutes with 10-minute rest breaks (Total: 1h 20m).
+* 📊 **Study Statistics & Local Room Database:**
+  * Local persistence powered by **Room (SQLite)**.
+  * Live Material 3 statistics card displaying **Total Historical Study Time** and **Weekly Study Time** formatted in exact hours and minutes (e.g., `1h 25m`).
+* 🔔 **Custom Notifications & Sound Effects:**
+  * Heads-up Android notifications for interval starts, rest breaks, and full session completions (with Android 13+ `POST_NOTIFICATIONS` runtime permission support).
+  * Custom audio cues (`start_study_interval.mp3`, `finish_study_interval.mp3`, and `finish_session.mp3`).
+* 🏁 **Early Session Completion & Cancellation:**
+  * Finish a session at any time with the **"Finalizar"** button. The exact accumulated study time is calculated and saved to the database.
+  * System back gesture integration (`BackHandler`) resets the timer and safely returns to the session selection screen.
+* 🌓 **Adaptive UI & State Preservation:**
+  * Declarative **Material 3** Jetpack Compose interface supporting light/dark theme toggles and screen rotations without losing state (`rememberSaveable`).
 
 ---
 
-## Architecture
+## 📐 Architecture & Project Structure
 
-The application strictly separates **business domain logic** from **presentation and Compose UI**.
+The application follows **Clean Architecture** principles combined with the **MVVM** pattern and reactive data streams using Kotlin **Coroutines** and **StateFlow**.
 
 ```text
 com.example.cascadestudy
-├── MainActivity.kt
+├── MainActivity.kt                      // Entry point, ViewModel factory, permission handling
+│
+├── data
+│   ├── local
+│   │   ├── AppDatabase.kt               // Room database singleton instance
+│   │   ├── CompletedSessionDao.kt       // Data Access Object with reactive SQL flows
+│   │   └── CompletedSessionEntity.kt    // SQLite entity table for completed sessions
+│   └── repository
+│       └── SessionRepository.kt         // Data repository with weekly time calculations
 │
 ├── domain
-│   ├── CascadeTimer.kt
-│   ├── StudySession.kt
-│   ├── StudySessionPreset.kt
-│   ├── StudySessionPresetExtensions.kt
-│   ├── TimerClock.kt
-│   ├── TimerEvent.kt
-│   ├── TimerState.kt
-│   └── TimerStateMachine.kt
+│   ├── CascadeTimer.kt                  // Core timer controller & time calculations
+│   ├── StudySession.kt                  // Domain data class representing session intervals
+│   ├── StudySessionPreset.kt            // Enum defining available session presets
+│   ├── StudySessionPresetExtensions.kt  // Mapping extension for presets to domain models
+│   ├── SystemTimerClock.kt              // Production system clock implementation
+│   ├── TimerClock.kt                    // Interface abstraction for time
+│   ├── TimerEvent.kt                    // Sealed interface for state machine events
+│   ├── TimerState.kt                    // Enum defining timer operational states
+│   └── TimerStateMachine.kt             // Encapsulated state transition rules
+│
+├── notification
+│   └── NotificationHelper.kt            // Android NotificationChannel and notification manager
 │
 ├── presentation
-│   ├── AppScreen.kt
+│   ├── AppScreen.kt                     // Navigation screen enumeration
+│   ├── components
+│   │   └── AuthorCredits.kt             // Clickable author credit component
 │   ├── selection
-│   │   └── SessionSelectionScreen.kt
+│   │   └── SessionSelectionScreen.kt    // Compose screen for choosing session presets
 │   └── timer
-│       ├── TimerUiState.kt
-│       ├── TimerViewModel.kt
-│       └── TimerScreen.kt
+│       ├── TimerScreen.kt               // Main timer screen layout and UI controls
+│       ├── TimerUiState.kt              // Immutable state data holder for UI
+│       └── TimerViewModel.kt            // ViewModel coordinating state, timer, audio, and DB
+│
+├── sound
+│   └── SoundManager.kt                  // Audio player managing MediaPlayer effects
 │
 └── ui
-    └── theme
-        ├── Color.kt
-        ├── Theme.kt
-        └── Type.kt
+    └── theme                            // Material 3 theme, colors, and typography
 ```
-
-### Key Components
-
-#### 1. Domain Layer (`domain/`)
-- **`StudySession`**: Data class representing interval durations and rest time. Includes parameter validation.
-- **`StudySessionPreset`**: Enum defining available presets (`FULL`, `SHORT`, `CUSTOM`).
-- **`StudySessionPresetExtensions`**: Extension `StudySessionPreset.toStudySession()` mapping presets to domain session models.
-- **`TimerState`**: Enum representing `IDLE`, `STUDYING`, `RESTING`, `PAUSED`, and `FINISHED`.
-- **`TimerEvent`**: Sealed interface representing events that trigger state transitions.
-- **`TimerStateMachine`**: State machine encapsulating valid state transitions.
-- **`CascadeTimer`**: Core timer engine that coordinates session, state machine, and clock calculations using absolute timestamp comparison.
-- **`TimerClock`**: Interface abstracting system time (`SystemTimerClock` for production, `FakeTimerClock` for tests).
-
-#### 2. Presentation Layer (`presentation/`)
-- **`AppScreen`**: Enum controlling app navigation (`SESSION_SELECTION`, `TIMER`).
-- **`SessionSelectionScreen`**: Compose screen allowing the user to pick a session preset.
-- **`TimerScreen`**: Compose screen rendering status, countdown, interval counts, and state controls.
-- **`TimerViewModel`**: Manages UI state (`TimerUiState`), coordinates periodic ticker coroutines, and handles `selectPreset()`, `start()`, `pause()`, `resume()`, and `reset()`.
 
 ---
 
-## App Flow
+## 🔁 App Navigation & Workflow
 
 ```text
   ┌───────────────────────────┐
   │  SessionSelectionScreen   │
-  │  (AppScreen.SELECTION)    │
+  │  (Choose FULL / SHORT)    │
   └─────────────┬─────────────┘
-                │ Select Preset (FULL / SHORT)
+                │ Select Preset
                 ▼
   ┌───────────────────────────┐
   │        TimerScreen        │
-  │    (AppScreen.TIMER)      │
+  │  (Countdown, Stats, &     │
+  │   Audio/Notification)     │
+  └─────────────┬─────────────┘
+                │ Click "Finalizar" / Finish
+                ▼
+  ┌───────────────────────────┐
+  │ Saves time to Room DB     │
+  │ Plays Sound & Notification│
+  │ Returns to Selection      │
   └───────────────────────────┘
 ```
 
 ---
 
-## Testing
+## 🧪 Testing Strategy
 
-The project emphasizes unit testing domain logic and ViewModel state handling independently of Android framework dependencies.
+Quality and testability are fundamental to Cascade Study. The project contains a comprehensive suite of unit and integration tests:
 
-### Covered Test Areas
-- **`StudySessionTest`**: Validates input bounds (empty intervals, non-positive values).
-- **`StudySessionPresetTest`**: Ensures `FULL` and `SHORT` presets map to correct interval configurations.
-- **`CascadeTimerTest`**: Verifies state transitions, precise interval countdowns, pause/resume time preservation, and completion.
-- **`TimerViewModelTest`**: Tests UI state updates, periodic ticker flows, reset actions, and preset selection updates.
-
----
-
-## Tech Stack
-
-| Technology | Purpose |
-| --- | --- |
-| **Kotlin** | Language |
-| **Android Jetpack Compose** | Declarative UI |
-| **Material 3** | Theme & Design System |
-| **MVVM** | Architecture Pattern |
-| **Kotlin Coroutines & StateFlow** | Reactive state management & asynchronous timer updates |
-| **JUnit 4** | Unit testing framework |
-| **Gradle (Kotlin DSL)** | Build system |
+* **`CascadeTimerTest`**: Verifies state machine transitions, exact interval countdowns, time preservation on pause/resume, and elapsed time calculations.
+* **`StudySessionPresetTest` & `StudySessionTest`**: Validates preset interval configurations and parameter bounds.
+* **`TimerViewModelTest`**: Tests UI state flows, coroutine tickers, database persistence triggers, notification triggers, and audio triggers using `FakeCompletedSessionDao`, `FakeNotificationHelper`, and `FakeSoundManager`.
+* **`SessionRepositoryTest`**: Verifies repository Flow mappings, weekly start-of-week timestamp calculations, and database insertions.
+* **`CompletedSessionDaoTest`**: Instrumented Room database tests verifying SQLite queries on Android runtime.
 
 ---
 
-## License
+## 🛠️ Tech Stack
 
-License information will be added upon official publication.
+| Component | Technology | Purpose |
+| --- | --- | --- |
+| **Language** | Kotlin (v2.4+) | Primary language |
+| **UI Framework** | Jetpack Compose | Declarative UI |
+| **Design System** | Material 3 | Modern Android styling & adaptive themes |
+| **Architecture** | MVVM + Clean Architecture | Separation of concerns & state management |
+| **Asynchrony** | Kotlin Coroutines & StateFlow | Reactive state updates & ticker timers |
+| **Database** | Room (v2.8+) + KSP | Local SQLite persistence & reactive queries |
+| **Audio & Media** | MediaPlayer | Custom audio effect playback |
+| **Notifications** | Android NotificationManagerCompat | Heads-up system alerts |
+| **Unit Testing** | JUnit 4 + Coroutines Test | Automated unit & integration testing |
+| **Build System** | Gradle (Kotlin DSL) | Build configuration & dependency management |
+
+---
+
+## 👤 Author & Credits
+
+Designed and developed by **Daniel Culpian**.
+
+* **GitHub:** [https://github.com/DanielCulpian](https://github.com/DanielCulpian)
+
+---
+
+## 📄 License
+
+Cascade Study v1.0.0 — All rights reserved.
