@@ -26,6 +26,26 @@ class CascadeTimer(
     val state: TimerState
         get() = stateMachine.state
 
+    // Calculates total elapsed study time in seconds for the session so far
+    fun getElapsedStudySeconds(): Long {
+        val isRestingOrPausedFromRest = state == TimerState.RESTING ||
+                (state == TimerState.PAUSED && stateMachine.previousState == TimerState.RESTING)
+
+        return when {
+            state == TimerState.IDLE -> 0L
+            state == TimerState.FINISHED -> session.intervals.sum() * 60L
+            isRestingOrPausedFromRest -> {
+                session.intervals.take(currentIntervalIndex + 1).sum() * 60L
+            }
+            else -> {
+                val completedSeconds = session.intervals.take(currentIntervalIndex).sum() * 60L
+                val currentIntervalTotalSeconds = session.intervals[currentIntervalIndex] * 60L
+                val currentIntervalElapsedSeconds = maxOf(0L, currentIntervalTotalSeconds - remainingSeconds)
+                completedSeconds + currentIntervalElapsedSeconds
+            }
+        }
+    }
+
     private fun startInterval(durationMillis: Long){
         remainingMillis = durationMillis
         endTimeMillis = clock.nowMillis() + durationMillis
