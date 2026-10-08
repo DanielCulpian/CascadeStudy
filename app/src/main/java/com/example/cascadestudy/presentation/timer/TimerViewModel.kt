@@ -220,9 +220,7 @@ class TimerViewModel(
         }
     }
 
-    // TODO: Waiting to finish implementing this method
     override fun onCleared() {
-        super.onCleared()
         soundManager?.release()
     }
 }

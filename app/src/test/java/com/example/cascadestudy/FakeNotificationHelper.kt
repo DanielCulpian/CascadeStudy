@@ -3,10 +3,10 @@ package com.example.cascadestudy
 import android.content.ContextWrapper
 import com.example.cascadestudy.notification.NotificationHelper
 
-private class DummyContext : ContextWrapper(null)
+internal class TestDummyContext : ContextWrapper(null)
 
 // Fake NotificationHelper implementation for verifying notification triggers in unit tests
-class FakeNotificationHelper : NotificationHelper(DummyContext()) {
+class FakeNotificationHelper : NotificationHelper(TestDummyContext()) {
     var intervalStartedCount = 0
         private set
     var restStartedCount = 0

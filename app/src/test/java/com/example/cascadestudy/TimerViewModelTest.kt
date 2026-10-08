@@ -7,13 +7,14 @@ import com.example.cascadestudy.domain.TimerClock
 import com.example.cascadestudy.domain.TimerState
 import com.example.cascadestudy.notification.NotificationHelper
 import com.example.cascadestudy.presentation.timer.TimerViewModel
+import com.example.cascadestudy.sound.SoundManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-// Unit tests for TimerViewModel behavior, coroutines, UI state flows, and notification triggers
+// Unit tests for TimerViewModel behavior, coroutines, UI state flows, notification, and sound triggers
 class TimerViewModelTest {
 
     // Test session with predefined intervals and rest duration
@@ -26,11 +27,12 @@ class TimerViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    // Creates a TimerViewModel with custom session, clock, and notification helper settings
+    // Creates a TimerViewModel with custom session, clock, notification helper, and sound manager settings
     private fun createViewModel(
         session: StudySession = testSession,
         clock: TimerClock = SystemTimerClock(),
-        notificationHelper: NotificationHelper? = null
+        notificationHelper: NotificationHelper? = null,
+        soundManager: SoundManager? = null
     ): TimerViewModel {
         val fakeDao = FakeCompletedSessionDao()
         val repository = SessionRepository(
@@ -41,7 +43,8 @@ class TimerViewModelTest {
             session = session,
             clock = clock,
             sessionRepository = repository,
-            notificationHelper = notificationHelper
+            notificationHelper = notificationHelper,
+            soundManager = soundManager
         )
     }
 
@@ -68,8 +71,22 @@ class TimerViewModelTest {
         // Act
         viewModel.start()
 
-        // Asser
+        // Assert
         assertEquals(1, fakeNotificationHelper.intervalStartedCount)
+    }
+
+    // Verifies starting a study interval triggers the start study audio effect
+    @Test
+    fun start_triggersStartStudySound() {
+        // Set
+        val fakeSoundManager = FakeSoundManager()
+        val viewModel = createViewModel(soundManager = fakeSoundManager)
+
+        // Act
+        viewModel.start()
+
+        // Assert
+        assertEquals(1, fakeSoundManager.startStudySoundCount)
     }
 
     // Verifies completing a study interval triggers the rest started notification
@@ -91,6 +108,27 @@ class TimerViewModelTest {
 
         // Assert
         assertEquals(1, fakeNotificationHelper.restStartedCount)
+    }
+
+    // Verifies completing a study interval triggers the finish study audio effect
+    @Test
+    fun studyIntervalFinished_triggersFinishStudySound() {
+        // Set
+        val fakeClock = FakeTimerClock()
+        val fakeSoundManager = FakeSoundManager()
+        val viewModel = createViewModel(
+            session = testSession,
+            clock = fakeClock,
+            soundManager = fakeSoundManager
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(60_000L)
+        viewModel.update()
+
+        // Assert
+        assertEquals(1, fakeSoundManager.finishStudySoundCount)
     }
 
     // Verifies completing the session triggers the session finished notification
@@ -121,6 +159,36 @@ class TimerViewModelTest {
 
         // Assert
         assertEquals(1, fakeNotificationHelper.sessionFinishedCount)
+    }
+
+    // Verifies completing the session triggers the finish session audio effect
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun sessionFinished_triggersFinishSessionSound() {
+        // Set
+        val fakeClock = FakeTimerClock()
+        val fakeSoundManager = FakeSoundManager()
+        val viewModel = createViewModel(
+            session = testSession,
+            clock = fakeClock,
+            soundManager = fakeSoundManager
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+        fakeClock.advanceMillis(60_000L)
+        mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(1_000L)
+
+        // Assert
+        assertEquals(1, fakeSoundManager.finishSessionSoundCount)
     }
 
     // Verifies resetting the ViewModel updates UI state to IDLE
