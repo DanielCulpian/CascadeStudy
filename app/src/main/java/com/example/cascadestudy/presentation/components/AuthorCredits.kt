@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 
+// Composable function to display author credits in a clickable text
 @Composable
 fun AuthorCredits(
     modifier: Modifier = Modifier
@@ -27,7 +29,7 @@ fun AuthorCredits(
             .clickable {
                 val intent = Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://github.com/DanielCulpian")
+                    "https://github.com/DanielCulpian".toUri()
                 )
                 context.startActivity(intent)
             }
