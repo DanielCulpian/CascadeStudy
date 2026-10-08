@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cascadestudy.domain.StudySessionPreset
+import com.example.cascadestudy.presentation.components.AuthorCredits
 
 @Composable
 fun SessionSelectionScreen(
@@ -127,5 +128,11 @@ fun SessionSelectionScreen(
                 }
             }
         }
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+        AuthorCredits()
     }
 }

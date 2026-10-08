@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cascadestudy.domain.TimerState
+import com.example.cascadestudy.presentation.components.AuthorCredits
 
 private fun stateText(state: TimerState): String {
     return when (state) {
@@ -285,5 +286,11 @@ fun TimerScreen(
                 }
             }
         }
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+        AuthorCredits()
     }
 }
