@@ -28,11 +28,14 @@ import com.example.cascadestudy.presentation.timer.TimerViewModel
 import com.example.cascadestudy.sound.SoundManager
 import com.example.cascadestudy.ui.theme.CascadeStudyTheme
 
+// Main entry point Activity managing navigation, ViewModel initialization, and system permissions
 class MainActivity : ComponentActivity() {
 
+    // Launcher for requesting POST_NOTIFICATIONS runtime permission on Android 13+
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    // TimerViewModel initialized with custom Factory supplying database, repository, notification, and sound managers
     private val viewModel: TimerViewModel by viewModels {
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -53,20 +56,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Request notification permissions if required on Android 13+
         requestNotificationPermission()
 
+        // Enable edge-to-edge layout rendering
         enableEdgeToEdge()
 
         setContent {
             CascadeStudyTheme {
                 val uiState by viewModel.uiState.collectAsState()
 
+                // State holding current screen navigation, preserved across configuration changes
                 var currentScreen by rememberSaveable {
                     mutableStateOf(AppScreen.SESSION_SELECTION)
                 }
 
                 when (currentScreen) {
                     AppScreen.SESSION_SELECTION -> {
+                        // Display session preset selection screen
                         SessionSelectionScreen(
                             onSessionSelected = { preset ->
                                 viewModel.selectPreset(preset)
@@ -75,11 +82,13 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     AppScreen.TIMER -> {
+                        // Handle back press gesture to reset timer and return to selection screen
                         BackHandler {
                             viewModel.reset()
                             currentScreen = AppScreen.SESSION_SELECTION
                         }
 
+                        // Display active timer screen
                         TimerScreen(
                             uiState = uiState,
                             onStart = viewModel::start,
@@ -97,6 +106,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Requests POST_NOTIFICATIONS permission on Android 13+ (API 33+) if not already granted
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(

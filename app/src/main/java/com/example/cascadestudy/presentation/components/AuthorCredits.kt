@@ -1,7 +1,6 @@
 package com.example.cascadestudy.presentation.components
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -13,7 +12,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 
-// Composable function to display author credits in a clickable text
+// Composable function to display clickable author credits linking to the author's GitHub profile
 @Composable
 fun AuthorCredits(
     modifier: Modifier = Modifier

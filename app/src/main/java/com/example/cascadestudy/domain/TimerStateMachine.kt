@@ -1,17 +1,18 @@
 package com.example.cascadestudy.domain
 
+// State machine encapsulating valid state transitions for the timer
 class TimerStateMachine {
-    // To save the actual state
+    // Current operational state
     var state: TimerState = TimerState.IDLE
         private set
 
-    // To save the previous state
+    // Previous operational state prior to pausing
     var previousState: TimerState? = null
         private set
 
     // Transition IDLE to STUDYING
-    private fun start(): Boolean{
-        if(state != TimerState.IDLE)
+    private fun start(): Boolean {
+        if (state != TimerState.IDLE)
             return false
 
         state = TimerState.STUDYING
@@ -19,8 +20,8 @@ class TimerStateMachine {
     }
 
     // Transition STUDYING/RESTING to PAUSED
-    private fun pause(): Boolean{
-        if(state != TimerState.STUDYING && state != TimerState.RESTING)
+    private fun pause(): Boolean {
+        if (state != TimerState.STUDYING && state != TimerState.RESTING)
             return false
 
         previousState = state
@@ -29,9 +30,9 @@ class TimerStateMachine {
         return true
     }
 
-    // Transition PAUSED to STUDYING/RESTING
-    private fun resume(): Boolean{
-        if(state != TimerState.PAUSED)
+    // Transition PAUSED back to STUDYING or RESTING
+    private fun resume(): Boolean {
+        if (state != TimerState.PAUSED)
             return false
 
         state = previousState ?: TimerState.IDLE
@@ -40,20 +41,20 @@ class TimerStateMachine {
         return true
     }
 
-    // Transition ANY to IDLE
-    private fun reset(): Boolean{
+    // Transition ANY state to IDLE
+    private fun reset(): Boolean {
         state = TimerState.IDLE
         previousState = null
 
         return true
     }
 
-    // Transition STUDYING to RESTING
-    private fun intervalFinished(isLastInterval: Boolean): Boolean{
-        if(state != TimerState.STUDYING)
+    // Transition STUDYING to RESTING or FINISHED
+    private fun intervalFinished(isLastInterval: Boolean): Boolean {
+        if (state != TimerState.STUDYING)
             return false
 
-        state = if(isLastInterval)
+        state = if (isLastInterval)
             TimerState.FINISHED
         else
             TimerState.RESTING
@@ -62,8 +63,8 @@ class TimerStateMachine {
     }
 
     // Transition RESTING to STUDYING
-    private fun restFinished(): Boolean{
-        if(state != TimerState.RESTING)
+    private fun restFinished(): Boolean {
+        if (state != TimerState.RESTING)
             return false
 
         state = TimerState.STUDYING
@@ -71,9 +72,9 @@ class TimerStateMachine {
         return true
     }
 
-    // Public function to manage events
-    fun onEvent(event: TimerEvent): Boolean{
-        return when(event){
+    // Processes an incoming TimerEvent and performs the corresponding state transition
+    fun onEvent(event: TimerEvent): Boolean {
+        return when (event) {
             TimerEvent.Start -> start()
             TimerEvent.Pause -> pause()
             TimerEvent.Resume -> resume()
