@@ -5,8 +5,9 @@ class TimerStateMachine {
     var state: TimerState = TimerState.IDLE
         private set
 
-    // To save de previous state
-    private var previousState: TimerState? = null
+    // To save the previous state
+    var previousState: TimerState? = null
+        private set
 
     // Transition IDLE to STUDYING
     private fun start(): Boolean{
