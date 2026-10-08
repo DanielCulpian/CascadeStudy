@@ -61,6 +61,32 @@ class TimerViewModelTest {
         assertEquals(TimerState.STUDYING, viewModel.uiState.value.state)
     }
 
+    // Verifies finishing session early calculates accumulated study time, triggers sound, notification, and resets state
+    @Test
+    fun finishSessionEarly_savesAccumulatedStudyTime_triggersNotificationAndSound() {
+        // Set
+        val fakeClock = FakeTimerClock()
+        val fakeNotificationHelper = FakeNotificationHelper()
+        val fakeSoundManager = FakeSoundManager()
+        val viewModel = createViewModel(
+            session = testSession,
+            clock = fakeClock,
+            notificationHelper = fakeNotificationHelper,
+            soundManager = fakeSoundManager
+        )
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(30_000L)
+        viewModel.update()
+        viewModel.finishSessionEarly()
+
+        // Assert
+        assertEquals(1, fakeNotificationHelper.sessionFinishedCount)
+        assertEquals(1, fakeSoundManager.finishSessionSoundCount)
+        assertEquals(TimerState.IDLE, viewModel.uiState.value.state)
+    }
+
     // Verifies starting a study interval triggers the interval started notification
     @Test
     fun start_triggersIntervalStartedNotification() {
