@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cascadestudy"
+    namespace = "com.danielculpian.cascadestudy"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.cascadestudy"
+        applicationId = "com.danielculpian.cascadestudy"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
