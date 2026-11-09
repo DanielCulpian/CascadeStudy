@@ -1,4 +1,4 @@
-# Cascade Study (v2.0.0)
+# Cascade Study (v2.0.1)
 
 **Cascade Study** is a modern Android study-time management application built around the **cascade study technique**.
 
@@ -8,7 +8,7 @@ Designed and developed by **[Daniel Culpian](https://github.com/DanielCulpian)**
 
 ---
 
-## 🌟 Key Features (v2.0.0)
+## 🌟 Key Features (v2.0.1)
 
 * 🎯 **Cascade Study Engine:** Coordinates study and rest intervals with smooth state transitions (`IDLE`, `STUDYING`, `RESTING`, `PAUSED`, `FINISHED`).
 * ⚡ **Preset Configurations:**
@@ -167,4 +167,4 @@ Designed and developed by **Daniel Culpian**.
 
 ## 📄 License
 
-Cascade Study v2.0.0 — All rights reserved.
+Cascade Study v2.0.1 — All rights reserved.
