@@ -22,6 +22,8 @@ import com.danielculpian.cascadestudy.data.local.AppDatabase
 import com.danielculpian.cascadestudy.data.repository.SessionRepository
 import com.danielculpian.cascadestudy.notification.NotificationHelper
 import com.danielculpian.cascadestudy.presentation.AppScreen
+import com.danielculpian.cascadestudy.presentation.history.WeeklyHistoryScreen
+import com.danielculpian.cascadestudy.presentation.history.WeeklyHistoryViewModel
 import com.danielculpian.cascadestudy.presentation.selection.SessionSelectionScreen
 import com.danielculpian.cascadestudy.presentation.timer.TimerScreen
 import com.danielculpian.cascadestudy.presentation.timer.TimerViewModel
@@ -47,7 +49,22 @@ class MainActivity : ComponentActivity() {
                 return TimerViewModel(
                     sessionRepository = repository,
                     notificationHelper = notificationHelper,
-                    soundManager = soundManager
+                    soundManager = soundManager,
+                    applicationContext = applicationContext
+                ) as T
+            }
+        }
+    }
+
+    // WeeklyHistoryViewModel initialized with custom Factory supplying session repository
+    private val historyViewModel: WeeklyHistoryViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val database = AppDatabase.getDatabase(applicationContext)
+                val repository = SessionRepository(database.completedSessionDao())
+                @Suppress("UNCHECKED_CAST")
+                return WeeklyHistoryViewModel(
+                    sessionRepository = repository
                 ) as T
             }
         }
@@ -65,6 +82,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CascadeStudyTheme {
                 val uiState by viewModel.uiState.collectAsState()
+                val historyUiState by historyViewModel.uiState.collectAsState()
 
                 // State holding current screen navigation, preserved across configuration changes
                 var currentScreen by rememberSaveable {
@@ -75,9 +93,15 @@ class MainActivity : ComponentActivity() {
                     AppScreen.SESSION_SELECTION -> {
                         // Display session preset selection screen
                         SessionSelectionScreen(
+                            totalHistoricalHours = uiState.totalHistoricalHours,
+                            weeklyHours = uiState.weeklyHours,
+                            todayHours = uiState.todayHours,
                             onSessionSelected = { preset ->
                                 viewModel.selectPreset(preset)
                                 currentScreen = AppScreen.TIMER
+                            },
+                            onOpenHistory = {
+                                currentScreen = AppScreen.WEEKLY_HISTORY
                             }
                         )
                     }
@@ -99,6 +123,24 @@ class MainActivity : ComponentActivity() {
                                 viewModel.finishSessionEarly()
                                 currentScreen = AppScreen.SESSION_SELECTION
                             }
+                        )
+                    }
+                    AppScreen.WEEKLY_HISTORY -> {
+                        // Handle back press gesture to return to selection screen
+                        BackHandler {
+                            currentScreen = AppScreen.SESSION_SELECTION
+                        }
+
+                        // Display weekly history table screen
+                        WeeklyHistoryScreen(
+                            uiState = historyUiState,
+                            onBackClick = {
+                                currentScreen = AppScreen.SESSION_SELECTION
+                            },
+                            onSelectYear = historyViewModel::selectYear,
+                            onSelectMonth = historyViewModel::selectMonth,
+                            onSetHourFilter = historyViewModel::setHourFilter,
+                            onResetFilters = historyViewModel::resetFilters
                         )
                     }
                 }

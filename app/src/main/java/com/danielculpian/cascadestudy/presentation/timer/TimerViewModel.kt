@@ -1,5 +1,6 @@
 package com.danielculpian.cascadestudy.presentation.timer
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.danielculpian.cascadestudy.data.repository.SessionRepository
@@ -12,6 +13,7 @@ import com.danielculpian.cascadestudy.domain.TimerState
 import com.danielculpian.cascadestudy.domain.TimerStateMachine
 import com.danielculpian.cascadestudy.domain.toStudySession
 import com.danielculpian.cascadestudy.notification.NotificationHelper
+import com.danielculpian.cascadestudy.receiver.AlarmScheduler
 import com.danielculpian.cascadestudy.sound.SoundManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,12 +30,12 @@ class TimerViewModel(
     private val clock: TimerClock = SystemTimerClock(),
     private val sessionRepository: SessionRepository,
     private val notificationHelper: NotificationHelper? = null,
-    private val soundManager: SoundManager? = null
+    private val soundManager: SoundManager? = null,
+    private val applicationContext: Context? = null
 ) : ViewModel() {
 
     private var updateJob: Job? = null
     private var currentPreset: StudySessionPreset = StudySessionPreset.FULL
-    private var isSessionSaved = false
     private var previousState: TimerState? = TimerState.IDLE
 
     // Domain timer instance
@@ -58,7 +60,7 @@ class TimerViewModel(
         observeStatistics()
     }
 
-    // Subscribes to total and weekly study statistics from the repository
+    // Subscribes to total, weekly, and daily study statistics from the repository
     private fun observeStatistics() {
         viewModelScope.launch {
             sessionRepository.totalStudySeconds.collect { totalSeconds ->
@@ -78,9 +80,18 @@ class TimerViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            sessionRepository.getDailyStudySeconds().collect { dailySeconds ->
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        todayHours = dailySeconds / 3600f
+                    )
+                }
+            }
+        }
     }
 
-    // Updates the exposed StateFlow and handles notification and sound triggers on state changes
+    // Updates the exposed StateFlow and handles notification/sound triggers
     private fun updateUIState() {
         val newState = timer.state
         handleNotificationsAndSounds(newState)
@@ -95,7 +106,33 @@ class TimerViewModel(
         }
     }
 
-    // Triggers relevant notification and sound effect based on state transition
+    // Schedules an exact background kernel alarm for the interval completion timestamp
+    private fun scheduleBackgroundAlarm() {
+        applicationContext?.let { context ->
+            val endTime = timer.endTimeMillis
+            if (endTime != null && endTime > 0L) {
+                val isLast = timer.currentIntervalIndex == session.intervals.lastIndex
+                val isRest = timer.state == TimerState.RESTING
+                AlarmScheduler.scheduleAlarm(
+                    context = context,
+                    triggerAtMillis = endTime,
+                    intervalIndex = timer.currentIntervalIndex,
+                    presetName = currentPreset.name,
+                    isLastInterval = isLast,
+                    isRest = isRest
+                )
+            }
+        }
+    }
+
+    // Cancels any scheduled background alarm
+    private fun cancelBackgroundAlarm() {
+        applicationContext?.let { context ->
+            AlarmScheduler.cancelAlarm(context)
+        }
+    }
+
+    // Triggers relevant notification, sound effect, and immediate database save on state transition
     private fun handleNotificationsAndSounds(newState: TimerState) {
         if (newState == previousState) return
 
@@ -108,18 +145,29 @@ class TimerViewModel(
                     )
                     soundManager?.playStartStudySound()
                 }
+                scheduleBackgroundAlarm()
             }
             TimerState.RESTING -> {
                 if (previousState == TimerState.STUDYING) {
+                    // Study interval finished: immediately persist its duration to DB
+                    saveCompletedInterval(timer.currentIntervalIndex)
+
                     notificationHelper?.showRestStartedNotification()
                     soundManager?.playFinishStudySound()
                 }
+                scheduleBackgroundAlarm()
             }
             TimerState.FINISHED -> {
                 if (previousState == TimerState.STUDYING || previousState == TimerState.RESTING) {
+                    // If finishing directly from a study interval, persist the final study interval
+                    if (previousState == TimerState.STUDYING) {
+                        saveCompletedInterval(timer.currentIntervalIndex)
+                    }
+
                     notificationHelper?.showSessionFinishedNotification()
                     soundManager?.playFinishSessionSound()
                 }
+                cancelBackgroundAlarm()
             }
             else -> {}
         }
@@ -127,13 +175,26 @@ class TimerViewModel(
         previousState = newState
     }
 
+    // Persists a completed study interval duration to the database
+    private fun saveCompletedInterval(intervalIndex: Int) {
+        if (intervalIndex in session.intervals.indices) {
+            val intervalSeconds = session.intervals[intervalIndex] * 60L
+            viewModelScope.launch {
+                sessionRepository.saveCompletedSession(
+                    durationSeconds = intervalSeconds,
+                    presetType = currentPreset.name
+                )
+            }
+        }
+    }
+
     // Selects a study session preset and updates the timer instance
     fun selectPreset(preset: StudySessionPreset) {
         stopUpdating()
         currentPreset = preset
         session = preset.toStudySession()
-        isSessionSaved = false
         previousState = TimerState.IDLE
+        cancelBackgroundAlarm()
         timer = CascadeTimer(
             session = session,
             stateMachine = TimerStateMachine(),
@@ -151,25 +212,10 @@ class TimerViewModel(
                 update()
 
                 if (timer.state == TimerState.FINISHED) {
-                    onSessionFinished()
                     break
                 }
 
                 delay(1.seconds)
-            }
-        }
-    }
-
-    // Persists the completed study session record to local storage
-    private fun onSessionFinished() {
-        if (!isSessionSaved) {
-            isSessionSaved = true
-            val totalStudySeconds = session.intervals.sum() * 60L
-            viewModelScope.launch {
-                sessionRepository.saveCompletedSession(
-                    durationSeconds = totalStudySeconds,
-                    presetType = currentPreset.name
-                )
             }
         }
     }
@@ -183,14 +229,15 @@ class TimerViewModel(
     // Starts the timer session and begins periodic UI updates
     fun start() {
         if (!timer.start()) return
-        isSessionSaved = false
         updateUIState()
+        scheduleBackgroundAlarm()
         startUpdating()
     }
 
     // Pauses the timer and stops periodic updates
     fun pause() {
         if (!timer.pause()) return
+        cancelBackgroundAlarm()
         updateUIState()
         stopUpdating()
     }
@@ -199,33 +246,34 @@ class TimerViewModel(
     fun resume() {
         if (!timer.resume()) return
         updateUIState()
+        scheduleBackgroundAlarm()
         startUpdating()
     }
 
     // Resets the timer to IDLE and stops periodic updates
     fun reset() {
         if (!timer.reset()) return
-        isSessionSaved = false
         previousState = TimerState.IDLE
+        cancelBackgroundAlarm()
         updateUIState()
         stopUpdating()
     }
 
-    // Finishes the study session early, plays completion sound, posts notification, and saves accumulated study time
+    // Finishes the study session early, plays completion sound, posts notification, and saves accumulated current interval study time
     fun finishSessionEarly() {
         if (timer.state == TimerState.IDLE) return
 
-        val elapsedStudySeconds = timer.getElapsedStudySeconds()
+        val currentIntervalElapsedSeconds = timer.getCurrentIntervalElapsedStudySeconds()
 
         // Trigger session completion notification and sound
         notificationHelper?.showSessionFinishedNotification()
         soundManager?.playFinishSessionSound()
 
-        // Save accumulated study time to database
-        if (elapsedStudySeconds > 0) {
+        // Save accumulated elapsed time from current active interval
+        if (currentIntervalElapsedSeconds > 0) {
             viewModelScope.launch {
                 sessionRepository.saveCompletedSession(
-                    durationSeconds = elapsedStudySeconds,
+                    durationSeconds = currentIntervalElapsedSeconds,
                     presetType = currentPreset.name
                 )
             }
@@ -238,12 +286,10 @@ class TimerViewModel(
     fun update() {
         timer.update()
         updateUIState()
-        if (timer.state == TimerState.FINISHED) {
-            onSessionFinished()
-        }
     }
 
     override fun onCleared() {
         soundManager?.release()
+        cancelBackgroundAlarm()
     }
 }

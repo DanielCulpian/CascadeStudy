@@ -46,6 +46,17 @@ class CascadeTimer(
         }
     }
 
+    // Calculates elapsed study time in seconds for the current active interval only
+    fun getCurrentIntervalElapsedStudySeconds(): Long {
+        val isStudyingOrPausedFromStudy = state == TimerState.STUDYING ||
+                (state == TimerState.PAUSED && stateMachine.previousState == TimerState.STUDYING)
+
+        if (!isStudyingOrPausedFromStudy) return 0L
+
+        val currentIntervalTotalSeconds = session.intervals[currentIntervalIndex] * 60L
+        return maxOf(0L, currentIntervalTotalSeconds - remainingSeconds)
+    }
+
     private fun startInterval(durationMillis: Long) {
         remainingMillis = durationMillis
         endTimeMillis = clock.nowMillis() + durationMillis

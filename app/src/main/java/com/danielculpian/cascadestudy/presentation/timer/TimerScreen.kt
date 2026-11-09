@@ -1,6 +1,7 @@
 package com.danielculpian.cascadestudy.presentation.timer
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,12 +22,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.danielculpian.cascadestudy.domain.TimerState
 import com.danielculpian.cascadestudy.presentation.components.AuthorCredits
+import com.danielculpian.cascadestudy.presentation.components.StudyStatisticsCard
 
 private fun stateText(state: TimerState): String {
     return when (state) {
@@ -45,17 +48,27 @@ private fun formatTime(totalSeconds: Long): String {
     return "%02d:%02d".format(minutes, seconds)
 }
 
-private fun formatDisplayTime(hours: Float): String {
-    val totalSeconds = (hours * 3600f).toLong()
-    if (totalSeconds <= 0L) return "0m"
-
-    val h = totalSeconds / 3600
-    val m = (totalSeconds % 3600) / 60
-
-    return if (h > 0) {
-        if (m > 0) "${h}h ${m}m" else "${h}h"
-    } else {
-        "${m}m"
+@Composable
+private fun stateBadgeColors(state: TimerState): Pair<Color, Color> {
+    val isDark = isSystemInDarkTheme()
+    return when (state) {
+        TimerState.STUDYING -> {
+            if (isDark) {
+                Color(0xFF1E3A2B) to Color(0xFFA3E6C3)
+            } else {
+                Color(0xFFE8F5E9) to Color(0xFF1B5E20)
+            }
+        }
+        TimerState.RESTING -> {
+            if (isDark) {
+                Color(0xFF3E1E22) to Color(0xFFF88B8B)
+            } else {
+                Color(0xFFFFEBEE) to Color(0xFFB71C1C)
+            }
+        }
+        else -> {
+            MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+        }
     }
 }
 
@@ -78,62 +91,11 @@ fun TimerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 2.dp
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Total Histórico",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(
-                        modifier = Modifier.height(4.dp)
-                    )
-                    Text(
-                        text = formatDisplayTime(uiState.totalHistoricalHours),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Esta Semana",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(
-                        modifier = Modifier.height(4.dp)
-                    )
-                    Text(
-                        text = formatDisplayTime(uiState.weeklyHours),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
+        StudyStatisticsCard(
+            totalHistoricalHours = uiState.totalHistoricalHours,
+            weeklyHours = uiState.weeklyHours,
+            todayHours = uiState.todayHours
+        )
 
         Spacer(
             modifier = Modifier.height(20.dp)
@@ -158,9 +120,11 @@ fun TimerScreen(
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                val (badgeContainerColor, badgeContentColor) = stateBadgeColors(uiState.state)
+
                 Surface(
                     shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = badgeContainerColor
                 ) {
                     Text(
                         text = stateText(uiState.state),
@@ -168,7 +132,7 @@ fun TimerScreen(
                             horizontal = 16.dp,
                             vertical = 8.dp
                         ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = badgeContentColor,
                         style = MaterialTheme.typography.labelLarge
                     )
                 }

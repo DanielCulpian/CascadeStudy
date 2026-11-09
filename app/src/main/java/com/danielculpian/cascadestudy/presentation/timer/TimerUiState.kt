@@ -9,5 +9,6 @@ data class TimerUiState(
     val currentIntervalIndex: Int,
     val totalIntervals: Int,
     val totalHistoricalHours: Float = 0f,
-    val weeklyHours: Float = 0f
+    val weeklyHours: Float = 0f,
+    val todayHours: Float = 0f
 )

@@ -61,7 +61,26 @@ class TimerViewModelTest {
         assertEquals(TimerState.STUDYING, viewModel.uiState.value.state)
     }
 
+    // Verifies completing a study interval immediately persists interval study time to database
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun studyIntervalFinished_immediatelySavesIntervalTimeToDatabase() {
+        // Set
+        val fakeClock = FakeTimerClock()
+        val viewModel = createViewModel(session = testSession, clock = fakeClock)
+
+        // Act
+        viewModel.start()
+        fakeClock.advanceMillis(60_000L)
+        viewModel.update()
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
+
+        // Assert: 60s studied in interval 0 (60/3600 = 0.01666h)
+        assertEquals(60 / 3600f, viewModel.uiState.value.totalHistoricalHours, 0.001f)
+    }
+
     // Verifies finishing session early calculates accumulated study time, triggers sound, notification, and resets state
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun finishSessionEarly_savesAccumulatedStudyTime_triggersNotificationAndSound() {
         // Set
@@ -80,11 +99,13 @@ class TimerViewModelTest {
         fakeClock.advanceMillis(30_000L)
         viewModel.update()
         viewModel.finishSessionEarly()
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
         // Assert
         assertEquals(1, fakeNotificationHelper.sessionFinishedCount)
         assertEquals(1, fakeSoundManager.finishSessionSoundCount)
         assertEquals(TimerState.IDLE, viewModel.uiState.value.state)
+        assertEquals(30 / 3600f, viewModel.uiState.value.totalHistoricalHours, 0.001f)
     }
 
     // Verifies starting a study interval triggers the interval started notification
@@ -432,7 +453,7 @@ class TimerViewModelTest {
         assertEquals(TimerState.FINISHED, viewModel.uiState.value.state)
 
         // Act
-        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
+        mainDispatcherRule.testDispatcher.scheduler.runCurrent()
 
         // Assert
         assertEquals(TimerState.FINISHED, viewModel.uiState.value.state)
