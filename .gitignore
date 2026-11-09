@@ -1,15 +1,42 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Signed release outputs & keystores
+*.jks
+*.keystore
+/app/release/
+/release/
+**/mapping.txt
+output-metadata.json
+
+# Local configuration & secrets
+local.properties
+
+# Gradle & Build caches
+.gradle/
+/build/
+**/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio & IDE files
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
+.idea/
 /.idea/workspace.xml
+/.idea/caches/
+/.idea/libraries/
+/.idea/modules.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+.navigation/
+
+# OS-generated files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+Thumbs.db
+
+# Project Scratch & Artifacts
+.artifacts/
